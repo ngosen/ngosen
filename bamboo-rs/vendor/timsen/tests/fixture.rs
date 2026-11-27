@@ -226,21 +226,28 @@ fn a_known_or_marked_syllable_is_never_a_fix_target() {
     assert_eq!(typing.fix(2, true).unwrap().word, "phim");
 }
 
-#[test]
-fn fixes_to_nearby_words_exactly_like_research_telex_typo() {
+/// Checks each line of a fixture of `research.telex_typo --write-fixes`: BEFORE, SHOWN, NEARBY, FIX
+/// and MARGIN, with the word after SHOWN before FIX when `after` is set.
+fn check_nearby(name: &str, least: usize, after: bool) {
     let t = table();
-    let fixes = std::fs::read_to_string(fixture("tiny.nearby")).unwrap();
-    assert!(fixes.lines().count() >= 8);
+    let fixes = std::fs::read_to_string(fixture(name)).unwrap();
+    assert!(fixes.lines().count() >= least);
     for line in fixes.lines() {
-        let [before, shown, nearby, want, margin] = line.split('\t').collect::<Vec<_>>()[..] else {
+        let mut cols: Vec<&str> = line.split('\t').collect();
+        let then = after.then(|| cols.remove(3));
+        let [before, shown, nearby, want, margin] = cols[..] else {
             panic!("bad line: {line}");
         };
         let mut typing = Typing::new(&t);
+        let at = before.split(' ').filter(|w| !w.is_empty()).count();
         for w in before.split(' ').filter(|w| !w.is_empty()) {
             // Both readings the same: the word is context as typed, as the research takes it.
             typing.push_either(w, w);
         }
         typing.push(shown);
+        if let Some(then) = then {
+            typing.push_either(then, then);
+        }
         let nearby: Vec<Nearby> = (nearby.split(' '))
             .map(|n| {
                 let (word, cost) = n.rsplit_once(':').unwrap();
@@ -248,7 +255,7 @@ fn fixes_to_nearby_words_exactly_like_research_telex_typo() {
                 Nearby { word, cost }
             })
             .collect();
-        match (want, typing.fix_nearby(typing.len() - 1, false, &nearby)) {
+        match (want, typing.fix_nearby(at, false, &nearby)) {
             ("-", None) => {}
             (want, Some(fix)) => {
                 assert_eq!(fix.word, want, "{line}");
@@ -262,6 +269,16 @@ fn fixes_to_nearby_words_exactly_like_research_telex_typo() {
             (want, None) => panic!("{line}: no fix, want {want}"),
         }
     }
+}
+
+#[test]
+fn fixes_to_nearby_words_exactly_like_research_telex_typo() {
+    check_nearby("tiny.nearby", 8, false);
+}
+
+#[test]
+fn fixes_with_the_word_after_exactly_like_research_telex_typo() {
+    check_nearby("tiny.nearby-after", 6, true);
 }
 
 #[test]

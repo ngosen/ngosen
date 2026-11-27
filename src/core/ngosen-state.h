@@ -203,7 +203,8 @@ namespace ngosen {
         std::string              oldPreBuffer_;
         std::string              lastWord_;                    ///< The word and break we last committed, while only backspaces follow
         std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it or dropped keys after it
-        uint64_t                 lastWordAtUs_ = 0;            ///< When lastWord_ was committed
+        bool                     changedEarlierWords_ = false; ///< The last commit changed words before its own, while only a plain Backspace follows
+        uint64_t                 lastWordAtUs_        = 0;     ///< When lastWord_ was committed
         std::string              lastWordAtFocusOut_;          ///< lastWord_ when focus left, given back if focus only bounced
         std::string              droppedWordAtFocusOut_;       ///< droppedWord_ at the same time
         uint64_t                 lastWordAtFocusOutUs_    = 0; ///< lastWordAtUs_ at the same time
@@ -1168,6 +1169,10 @@ namespace ngosen {
         std::optional<std::string> takeBackFix();
         bool                       undoFixInField(ngosen::KeyPress& keyEvent);
         bool                       undoFixInPreedit(ngosen::KeyPress& keyEvent);
+        // The change that takes back the fix the last word made Đoán dấu make to the word before it.
+        std::optional<std::pair<std::string, std::string>> takeBackEarlierFix();
+        bool                                               undoEarlierFixInField(ngosen::KeyPress& keyEvent);
+        bool                                               undoEarlierFixInPreedit(ngosen::KeyPress& keyEvent);
         // Commits a word from the preedit with Đoán dấu's changes; returns the word Backspace may reopen.
         std::string commitGuessInPreedit(const std::string& text, bool keyTaken);
         // The engine finished a word: send what differs from the text already typed.

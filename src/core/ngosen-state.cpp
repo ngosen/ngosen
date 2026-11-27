@@ -162,7 +162,7 @@ namespace ngosen {
         const bool               startsWord = !shownBefore || *shownBefore.get() == 0;
         // The app may change its text as soon as the preedit shows.
         const Surrounding beforeKey = startsWord ? host_->surrounding() : Surrounding();
-        if (ngosen::key::isBackspace(currentSym) && (undoFixInPreedit(keyEvent) || reopenWordInPreedit(keyEvent)))
+        if (ngosen::key::isBackspace(currentSym) && (undoFixInPreedit(keyEvent) || undoEarlierFixInPreedit(keyEvent) || reopenWordInPreedit(keyEvent)))
             return;
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone) {
             ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
@@ -386,7 +386,7 @@ namespace ngosen {
 
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (ngosen::key::isBackspace(currentSym)) {
-                if (undoFixInField(keyEvent) || restoreDroppedWord(keyEvent) || replaceKeysShownAsTyped(keyEvent))
+                if (undoFixInField(keyEvent) || undoEarlierFixInField(keyEvent) || restoreDroppedWord(keyEvent) || replaceKeysShownAsTyped(keyEvent))
                     return;
                 dropLetterForBackspace();
             } else {
@@ -1048,8 +1048,10 @@ namespace ngosen {
         // A key typed during the swap ends the word when it replays.
         if (!keyEvent.isRelease() && !keyEvent.isModifier() && !deleting)
             lockedWord_.reset();
-        if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
+        if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace)) {
             lastWord_.clear();
+            changedEarlierWords_ = false;
+        }
         if (holdKeyBehindHeldKey(keyEvent, currentSym))
             return;
         if (handleKeyDuringReplacement(keyEvent, currentSym) || passesKeyWhileCursorPast(keyEvent, currentSym))

@@ -311,7 +311,8 @@ namespace {
 
     std::string learnedFile();
 
-    // Types into a FakeApp; \b in `typed` is a Backspace, and ~ after a key sends the next one right after it.
+    // Types into a FakeApp; \b in `typed` is a Backspace, \x7f a Delete, \x17 a Ctrl+Backspace, and ~
+    // after a key sends the next one right after it.
     std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, const GuessRun& run = {}) {
         realMode = mode;
         realtextLen.store(0);
@@ -342,7 +343,12 @@ namespace {
                 app->suggest(run.suggests, true);
                 loop.pump(50);
             }
-            app->type(typed[i] == '\b' ? ngosen::key::BackSpace : static_cast<uint32_t>(typed[i]));
+            if (typed[i] == '\x17')
+                app->type(ngosen::key::BackSpace | ngosen::test::WithCtrl);
+            else if (typed[i] == '\x7f')
+                app->type(ngosen::key::Delete);
+            else
+                app->type(typed[i] == '\b' ? ngosen::key::BackSpace : static_cast<uint32_t>(typed[i]));
             loop.pump(i + 1 < typed.size() && typed[i + 1] == '~' ? 2 : run.keyMs);
         }
         loop.pump(300);
@@ -453,6 +459,23 @@ namespace {
                 text = typeGuessingInApp(reports, mode, "banfm. toi go ggo ", {.fixesTypos = true, .fixStrength = strength});
                 check(text == fixed, "Đoán dấu: fixing strength " + std::to_string(strength) + " fixes what wins by its margin" + name, text);
             }
+            // ggo falls short of the margin after gõ; phim after it settles it.
+            text = typeGuessingInApp(reports, mode, "go ggo phim ", {.fixesTypos = true});
+            check(text == "gõ gõ phím ", "Đoán dấu: a word short of the margin is fixed once the next word ends" + name, text);
+            text = typeGuessingInApp(makeField("wayland", false), mode, "go ggo phim ", {.fixesTypos = true});
+            check(text == "gõ ggo phím ", "Đoán dấu: a field that shows nothing keeps the word before the last as typed" + name, text);
+            text = typeGuessingInApp(reports, mode, "go ggo phim \b", {.fixesTypos = true});
+            check(text == "gõ ggo phím ", "Đoán dấu: Backspace right after a fix to the word before brings back what was typed" + name, text);
+            text = typeGuessingInApp(reports, mode, "go ggo phim \b\b", {.fixesTypos = true});
+            check(text == "gõ ggo phím", "Đoán dấu: the Backspace after that one takes only the space" + name, text);
+            text = typeGuessingInApp(reports, mode, "go ggo phim \b", {.pageAt = 12, .pageShows = "ga ga phim ", .fixesTypos = true});
+            check(text == "ga ga phim", "Đoán dấu: Backspace in a field the page changed after such a fix only deletes" + name, text);
+            text = typeGuessingInApp(reports, mode, "go ggo phim \x7f\b", {.fixesTypos = true});
+            check(text == "gõ gõ phím", "Đoán dấu: Backspace after another key keeps such a fix" + name, text);
+            text = typeGuessingInApp(reports, mode, "go ggo phim \x17", {.fixesTypos = true});
+            check(text.rfind("gõ gõ", 0) == 0, "Đoán dấu: Ctrl+Backspace keeps such a fix" + name, text);
+            text = typeGuessingInApp(reports, mode, "go ggo phim \bnay ", {.fixesTypos = true});
+            check(text == "gõ ggo phím này ", "Đoán dấu: a word typed after that Backspace leaves the word as typed" + name, text);
             text = typeGuessingInApp(reports, mode, "ban \bf ");
             check(text == "bàn ", "Đoán dấu: Backspace reopens a guessed word, so a tone key changes it" + name, text);
             bool learned = false;

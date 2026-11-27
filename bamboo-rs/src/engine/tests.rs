@@ -2444,6 +2444,127 @@ fn the_first_fix_after_a_sentence_can_be_undone() {
     assert!(e.undo_fix().is_some());
 }
 
+/// A slip short of the fixing margin when its word ends, then a word that settles it.
+const SHORT_THEN_SETTLED: [(&str, char); 3] = [("ta", '.'), ("banfm", ' '), ("phim", ' ')];
+
+#[test]
+fn a_word_short_of_the_margin_is_fixed_once_the_next_word_ends() {
+    for whole in [true, false] {
+        let mut e = engine_on(&shared_dictionary());
+        e.set_whole_run(whole);
+        let mut field = Vec::new();
+        type_into(&mut e, &mut field, &SHORT_THEN_SETTLED[..2]);
+        assert_eq!(field, ["ta", "banfm"], "not when it ends");
+        type_into(&mut e, &mut field, &SHORT_THEN_SETTLED[2..]);
+        let fixed = if whole { "bàn" } else { "banfm" };
+        assert_eq!(field, ["ta", fixed, "phím"], "whole run {whole}");
+    }
+}
+
+#[test]
+fn a_field_that_shows_its_text_from_the_second_word_gets_the_later_fix() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    e.set_whole_run(false);
+    type_into(&mut e, &mut field, &[("go", ' ')]);
+    e.set_whole_run(true);
+    type_into(&mut e, &mut field, &[("ggo", ' ')]);
+    assert_eq!(field, ["gõ", "ggo"], "not when it ends");
+    type_into(&mut e, &mut field, &[("phim", ' ')]);
+    assert_eq!(field, ["gõ", "gõ", "phím"]);
+}
+
+/// Backspace after the fix a later word made: what the field shows from the fixed word on becomes
+/// what was typed there.
+fn undo_earlier_with_backspace(e: &mut BambooEngine, field: &mut Vec<String>) -> bool {
+    let Some(old) = e.earlier_fix_shown() else {
+        return false;
+    };
+    assert_eq!(e.earlier_fix_shown(), Some(old.clone()), "only looks");
+    let new = e.undo_earlier_fix().unwrap();
+    assert_eq!(e.earlier_fix_shown(), None);
+    let (old, new) = (diacritics::words_of(&old), diacritics::words_of(&new));
+    let from = field.len() - old.len();
+    assert_eq!(field[from..], old);
+    field.truncate(from);
+    field.extend(new.into_iter().map(str::to_string));
+    true
+}
+
+#[test]
+fn backspace_right_after_a_later_fix_takes_it_back_for_good() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &SHORT_THEN_SETTLED);
+    assert_eq!(field, ["ta", "bàn", "phím"]);
+    assert!(e.undo_fix().is_none(), "the last word was not fixed");
+    assert!(undo_earlier_with_backspace(&mut e, &mut field));
+    assert_eq!(field, ["ta", "banfm", "phím"]);
+    assert!(!undo_earlier_with_backspace(&mut e, &mut field), "once");
+    type_into(&mut e, &mut field, &[("nay", '.')]);
+    assert_eq!(field, ["ta", "banfm", "phím", "này"]);
+    // Learned as typed, so a later run leaves it alone.
+    let mut later = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(&mut later, &mut field, &SHORT_THEN_SETTLED);
+    assert_eq!(field, ["ta", "banfm", "phím"]);
+}
+
+#[test]
+fn taking_a_later_fix_back_changes_that_word_alone() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    let typed = [("ban", ' '), ("phmi", ' '), ("nay", ' ')];
+    type_into(&mut e, &mut field, &typed);
+    assert_eq!(field, ["bàn", "phím", "này"]);
+    assert!(undo_earlier_with_backspace(&mut e, &mut field));
+    // Without phím after it the run reads bạn again, but the field was checked for one word.
+    assert_eq!(field, ["bàn", "phmi", "này"]);
+}
+
+#[test]
+fn a_later_fix_is_taken_back_after_the_key_that_ended_its_run() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("banfm", ' '), ("phim", '.')]);
+    assert_eq!(field, ["bàn", "phím"]);
+    assert_eq!(e.earlier_fix_shown(), Some("bàn phím.".to_string()));
+    assert_eq!(e.undo_earlier_fix(), Some("banfm phím.".to_string()));
+    let mut later = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(&mut later, &mut field, &[("banfm", ' '), ("phim", '.')]);
+    assert_eq!(field, ["banfm", "phím"], "learned as typed");
+}
+
+#[test]
+fn a_later_fix_is_taken_back_only_by_the_next_key() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &SHORT_THEN_SETTLED);
+    type_into(&mut e, &mut field, &[("nay", ' ')]);
+    assert_eq!(e.undo_earlier_fix(), None, "after another word");
+    let mut e = engine_on(&shared_dictionary());
+    type_into(&mut e, &mut Vec::new(), &SHORT_THEN_SETTLED);
+    e.process_key_event(KEY_RETURN, 0);
+    assert_eq!(e.undo_earlier_fix(), None, "after a key that ends the run");
+    let mut e = engine_on(&shared_dictionary());
+    type_into(&mut e, &mut Vec::new(), &SHORT_THEN_SETTLED);
+    e.set_private(true);
+    assert_eq!(e.undo_earlier_fix(), None, "in a private field");
+    let mut e = engine_on(&shared_dictionary());
+    type_into(&mut e, &mut Vec::new(), &SHORT_THEN_SETTLED[..2]);
+    type_keys(&mut e, "phim ");
+    assert_eq!(e.undo_earlier_fix(), None, "before the field shows the fix");
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    let fixed_at_its_end = [("toi", ' '), ("go", ' '), ("phmi", ' '), ("nay", ' ')];
+    type_into(&mut e, &mut field, &fixed_at_its_end);
+    assert_eq!(field[2], "phím");
+    assert_eq!(e.undo_earlier_fix(), None, "a fix made when its word ended");
+}
+
 #[test]
 fn a_charset_change_ends_the_run_kept_in_the_old_one() {
     let mut e = engine_on(&shared_dictionary());

@@ -575,6 +575,25 @@ pub extern "C" fn EngineUndoFix(engine: usize) -> *mut c_char {
         .unwrap_or(std::ptr::null_mut())
 }
 
+/// For Backspace right after the key that committed a word which made Đoán dấu fix the word
+/// before it: the text the field shows from the fixed word to the cursor, for the front end to
+/// check before `EngineUndoEarlierFix`; null when there is no such fix.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineEarlierFixShown(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| e.earlier_fix_shown().map(|t| c_string(&t)))
+        .flatten()
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// Takes that fix back for good and returns the text to put in place of what
+/// `EngineEarlierFixShown` returned; null when there is no such fix.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineUndoEarlierFix(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| e.undo_earlier_fix().map(|t| c_string(&t)))
+        .flatten()
+        .unwrap_or(std::ptr::null_mut())
+}
+
 /// For Cứu chữ: `text`, typed without marks, with the marks Đoán dấu gives it, in the output
 /// charset; null without Đoán dấu, in a private field, or when no word changes.
 ///

@@ -371,6 +371,8 @@ pub struct BambooEngine {
     /// Set for the next key only, after a commit whose last word Đoán dấu fixed: Backspace then
     /// takes the fix back.
     fix_undoable: bool,
+    /// Whether Backspace now would take back a fix made to the word before the last.
+    earlier_fix_undoable: bool,
     /// Whether the key being handled committed text.
     committed_now: bool,
     /// The text about to be committed is a macro's, which Đoán dấu never learns.
@@ -412,6 +414,7 @@ impl BambooEngine {
             keep_keys_until_next_key: false,
             diacritics: None,
             fix_undoable: false,
+            earlier_fix_undoable: false,
             committed_now: false,
             commits_macro: false,
             last_commit_macro: false,
@@ -1289,12 +1292,14 @@ impl BambooEngine {
     pub fn process_key_event(&mut self, key_val: u32, state: u32) -> bool {
         self.dropped_word.clear();
         self.fix_undoable = false;
+        self.earlier_fix_undoable = false;
         self.committed_now = false;
         let used = self.handle_key_event(key_val, state);
         self.drop_kept_tail = false;
-        self.fix_undoable = self.committed_now
-            && !self.private_field
-            && self.diacritics.as_ref().is_some_and(Diacritics::can_undo);
+        let fixing = self.committed_now && !self.private_field;
+        self.fix_undoable = fixing && self.diacritics.as_ref().is_some_and(Diacritics::can_undo);
+        self.earlier_fix_undoable =
+            fixing && (self.diacritics.as_ref()).is_some_and(Diacritics::can_undo_earlier);
         used
     }
 
@@ -1429,6 +1434,7 @@ impl BambooEngine {
     pub fn set_output_charset(&mut self, charset: String) {
         if charset != self.output_charset {
             self.fix_undoable = false;
+            self.earlier_fix_undoable = false;
             if let Some(d) = &mut self.diacritics {
                 d.reset();
             }
@@ -1439,6 +1445,7 @@ impl BambooEngine {
     /// Ends the run, learning it as the end of a sentence would, and guesses nothing from now.
     pub fn remove_diacritics(&mut self) {
         self.fix_undoable = false;
+        self.earlier_fix_undoable = false;
         if let Some(d) = &mut self.diacritics {
             d.reset();
         }
@@ -1468,10 +1475,32 @@ impl BambooEngine {
         Some(self.encode_text(&shown))
     }
 
+    /// For Backspace right after the key that committed a word which made Đoán dấu fix the word
+    /// before it: what the field shows from the fixed word to the cursor (`tiếng việt `), for the
+    /// front end to check before `undo_earlier_fix`. None as for `undo_fix`.
+    pub fn earlier_fix_shown(&self) -> Option<String> {
+        if !self.earlier_fix_undoable || self.private_field {
+            return None;
+        }
+        let shown = self.diacritics.as_ref()?.earlier_fix_shown()?;
+        Some(self.encode_text(&shown))
+    }
+
+    /// Takes that fix back for good and returns what the field should show in place of
+    /// `earlier_fix_shown` (`tieegns việt `).
+    pub fn undo_earlier_fix(&mut self) -> Option<String> {
+        if !std::mem::take(&mut self.earlier_fix_undoable) || self.private_field {
+            return None;
+        }
+        let (_, typed) = self.diacritics.as_mut()?.undo_earlier_fix()?;
+        Some(self.encode_text(&typed))
+    }
+
     /// A field that turns private ends the run and drops what waited to be learned. It stays off
     /// after it turns back, since Backspace and the front end can bring its private words back.
     pub fn set_private(&mut self, private: bool) {
         self.fix_undoable &= !private;
+        self.earlier_fix_undoable &= !private;
         if private && !self.private_field {
             if let Some(d) = &mut self.diacritics {
                 d.drop_run();
@@ -1544,6 +1573,7 @@ impl BambooEngine {
 
     pub fn reset(&mut self) {
         self.fix_undoable = false;
+        self.earlier_fix_undoable = false;
         self.commit_preedit_and_reset(String::new());
         if let Some(d) = &mut self.diacritics {
             d.reset();
@@ -1658,6 +1688,7 @@ impl BambooEngine {
 
     pub fn rebuild_from_text(&mut self, text: &str) {
         self.fix_undoable = false;
+        self.earlier_fix_undoable = false;
         if self.preedit_text.is_empty()
             && !self.private_field
             && let Some(d) = &mut self.diacritics

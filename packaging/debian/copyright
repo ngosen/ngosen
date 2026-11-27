@@ -43,6 +43,12 @@ License: GPL-3.0-or-later
 Comment: The words were counted in FineWeb-2 (https://huggingface.co/datasets/HuggingFaceFW/fineweb-2),
  made available by Hugging Face under the Open Data Commons Attribution License (ODC-By) v1.0.
 
+Files: data/chat-shorthand.tsv
+Copyright: 2026 Ngó Sen contributors
+License: GPL-3.0-or-later
+Comment: The abbreviations were counted in FineWeb-2 (https://huggingface.co/datasets/HuggingFaceFW/fineweb-2),
+ made available by Hugging Face under the Open Data Commons Attribution License (ODC-By) v1.0.
+
 Files: data/keep-words.txt
 Copyright: 2000-2026 Kevin Atkinson
            2026 Ngó Sen contributors

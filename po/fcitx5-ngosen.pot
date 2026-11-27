@@ -2550,6 +2550,10 @@ msgid "Ngó Sen did not answer. Try again."
 msgstr ""
 
 #: settings-gui/core/learned.py
+msgid "A word without marks that Ngó Sen does not know, such as a name or khum, is learned once you typed it and went on typing three times, so fixing typos leaves it alone. Only words of 2 to 10 letters, only while typos are fixed, and not in a terminal. The count stays in memory and starts again when fcitx5 restarts."
+msgstr ""
+
+#: settings-gui/core/learned.py
 msgid "A chat abbreviation you take back with Backspace twice in a row stays as typed. Which ones is kept in {}, counted while learning is on, with Đoán dấu on or off; the Macros page lists them and can make one expand again."
 msgstr ""
 

@@ -38,6 +38,12 @@ def how_it_learns(file=None):
             " it guessed itself, and not text from macros."
         ),
         _(
+            "A word without marks that Ngó Sen does not know, such as a name or khum, is learned"
+            " once you typed it and went on typing three times, so fixing typos leaves it alone."
+            " Only words of 2 to 10 letters, only while typos are fixed, and not in a terminal."
+            " The count stays in memory and starts again when fcitx5 restarts."
+        ),
+        _(
             "It keeps runs of one, two and three words with how often each came, and where a"
             " run of typing started and ended. Put together, they can show short sentences you"
             " typed."

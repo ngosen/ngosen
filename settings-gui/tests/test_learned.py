@@ -36,6 +36,7 @@ class FileTest(unittest.TestCase):
         lines = learned.how_it_learns(file)
         self.assertTrue(any("~/.local/share/ngosen/learned-diacritics" in line for line in lines))
         self.assertTrue(any("~/.local/share/ngosen/kept-chat-shorthand" in line for line in lines))
+        self.assertTrue(any("without marks" in line and "three times" in line for line in lines))
         self.assertEqual(learned.shown_path("/data/ngosen/x", "/home/a"), "/data/ngosen/x")
         self.assertEqual(learned.shown_path("/home/ab/x", "/home/a"), "/home/ab/x")
 

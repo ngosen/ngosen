@@ -27,6 +27,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   kế tiếp, có thêm từ đó làm căn cứ. Gõ `tooi nois tieegns vieetj` thì `tieegns` thành `tiếng` ngay khi
   `việt` gõ xong. Vì lúc đó chữ được sửa là từ đứng trước, việc này chỉ chạy ở ô nhập cho bộ gõ xem chữ đang
   có. Backspace ngay sau từ kế tiếp trả lại đúng chữ đã gõ và từ đó về sau giữ nguyên chữ ấy. (#1037)
+- Đoán chữ nay học cả chữ không dấu bạn gõ cố ý: chữ mà Ngó Sen chưa biết, như tên riêng hay `khum`,
+  sau ba lần gõ rồi gõ tiếp thì được nhớ, và phần sửa âm tiết gõ sai không đổi nó nữa. Chỉ chữ dài 2 đến
+  10 chữ cái; không học trong terminal và ô mật khẩu; nút **Xem** hiện chữ đã nhớ, **Quên hết** xoá được.
+  (#1047)
 - Gõ tắt có sẵn chữ viết tắt khi chat, bật sẵn: `ko` thành `không`, `dc` thành `được`, `cviec` thành
   `công việc`. Lần đầu bung, Ngó Sen báo một lần bằng thông báo của desktop. Backspace ngay sau dấu cách trả
   lại chữ đã gõ; chữ nào bạn trả lại hai lần liền thì từ đó giữ nguyên như gõ. Trang Gõ tắt có danh sách

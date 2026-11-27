@@ -128,6 +128,10 @@ báo của desktop.
 
 - **Học gì:** chữ có dấu mà Ngó Sen đã đưa vào ô, gồm chữ bạn tự gõ có dấu và chữ bạn bấm Backspace để giữ
   nguyên như đã gõ sau khi đoán sai. Không học chữ máy tự đoán, không học chữ bung ra từ gõ tắt.
+- **Chữ không dấu gõ cố ý:** chữ không dấu mà Ngó Sen chưa biết, như tên riêng hay `khum`, được học sau
+  ba lần bạn gõ nó rồi gõ tiếp, để phần sửa âm tiết gõ sai không đổi nó nữa. Chỉ chữ dài 2 đến 10 chữ
+  cái, chỉ khi đang bật **Sửa cả âm tiết gõ sai**, và không học trong terminal. Số đếm chỉ nằm trong bộ
+  nhớ; khởi động lại fcitx5 thì đếm lại từ đầu.
 - **Lưu gì:** các cụm 1, 2 và 3 chữ liền nhau kèm số lần gặp, cả chỗ bắt đầu và kết thúc một đoạn gõ.
   Ghép các cụm lại có thể đọc ra những câu ngắn bạn đã gõ.
 - **Khi nào:** khi một đoạn gõ kết thúc: rời ô, bấm chuột, nhấn Enter, hoặc gõ đủ 200 âm tiết. Chữ gõ rồi

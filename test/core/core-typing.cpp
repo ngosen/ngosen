@@ -375,6 +375,8 @@ namespace {
         const Field konsole = makeField("wayland", true, "org.kde.konsole");
         text                = typeGuessing(konsole, "toi go phim ");
         check(text == "toi go phim ", "Đoán dấu: off by default in a terminal that sets no terminal flag", text);
+        text = typeGuessing(makeField("dbus", false, "xfce4-terminal"), "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: off by default in xfce4-terminal, whose flags match a GTK editor", text);
         text = typeGuessing(konsole, "toi go phim ", true, true);
         check(text == "tôi gõ phím ", "Đoán dấu: in a terminal when asked to", text);
         text = typeGuessing(makeField("wayland", true, "code"), "toi go phim ");
@@ -6367,6 +6369,7 @@ namespace {
             {"wayland_v2", "Alacritty", true},
             {"wayland_v2", "com.mitchellh.ghostty", true},
             {"dbus", "gnome-terminal-server", true},
+            {"dbus", "xfce4-terminal", true},
             {"dbus", "kgx", true},
             {"dbus", "ptyxis", true},
             {"ibus", "gtk4-im:ptyxis", true},

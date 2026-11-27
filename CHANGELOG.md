@@ -19,6 +19,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   terminal, Đoán dấu nghỉ trừ khi bật **Đoán cả trong terminal**, vì ở đó nó không sửa lại được chữ trước.
   Gói cài có sẵn bảng đoán dấu (12 MB), không cần tải gì thêm và không cần mạng.
 
+### Sửa
+
+- Terminal của Xfce (xfce4-terminal) được nhận ra là terminal như Konsole: ở dấu nhắc mật khẩu phím vào
+  đúng như gõ, và chữ có dấu tách rời xoá đúng bằng Backspace.
+
 ## [1.14.3-1] — 26/11/2026
 
 Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz.vn): chữ vừa sửa dấu không còn thỉnh thoảng mất ("người" ra "ời") khi ô quay lại focus chỉ trong chốc lát (#1025). Trong WPS Office 12 qua IBus, thêm dấu không còn giữ lại chữ cũ ("tiếng" ra "tieêngếng") và trong bảng tính dấu vừa thêm không còn hay mất (#1027).

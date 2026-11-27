@@ -53,29 +53,29 @@ def problems(lines, syllables, english):
 
 def self_test():
     syllables, english = {"ban", "đt"}, {"vs", "dc"}
-    cases = {
-        "ko\tkhông": [],
-        "dc\tđược": [],
-        "đt\tđiện thoại": [],
-        "k\tkhông": ["two or more"],
-        "Ko\tkhông": ["two or more"],
-        "ban\tbạn": ["Vietnamese syllable"],
-        "vs\tvới": ["English word"],
-        "ko không": ["expected KEY"],
-        "ko\tko": ["expands to itself"],
-        "ko\tkhông": ["not NFC"],
-    }
+    cases = [
+        (["ko\tkhông"], []),
+        (["dc\tđược"], []),
+        (["đt\tđiện thoại"], []),
+        (["ae\tanh em", "ko\tkhông"], []),
+        (["k\tkhông"], ["two or more"]),
+        (["Ko\tkhông"], ["two or more"]),
+        (["ban\tbạn"], ["Vietnamese syllable"]),
+        (["vs\tvới"], ["English word"]),
+        (["ko không"], ["expected KEY"]),
+        ([" ko\tkhông"], ["expected KEY"]),
+        (["ko\tkhông "], ["expected KEY"]),
+        (["ko\tko"], ["expands to itself"]),
+        ([unicodedata.normalize("NFD", "ko\tkhông")], ["not NFC"]),
+        (["ko\tkhông", "ae\tanh em"], ["sorted and unique"]),
+        (["ko\tkhông", "ko\tkhông"], ["sorted and unique"]),
+    ]
     failed = False
-    for line, expected in cases.items():
-        got = problems([line], syllables, english)
+    for lines, expected in cases:
+        got = problems(lines, syllables, english)
         if len(got) != len(expected) or not all(e in g for e, g in zip(expected, got)):
-            print(f"self-test: {line!r} gave {got}, expected {expected}", file=sys.stderr)
+            print(f"self-test: {lines!r} gave {got}, expected {expected}", file=sys.stderr)
             failed = True
-    if "sorted and unique" not in " ".join(
-        problems(["ko\tkhông", "đc\tđược", "ko\tkhông"], syllables, english)
-    ):
-        print("self-test: unsorted and repeated keys passed", file=sys.stderr)
-        failed = True
     return 1 if failed else 0
 
 

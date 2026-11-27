@@ -778,7 +778,8 @@ namespace ngosen {
         return s.isValid() && s.cursor() == s.anchor();
     }
 
-    // Backspace right after Space split a word or dropped keys after it brings back what was typed.
+    // Backspace right after Space split a word, dropped keys after it or expanded a chat abbreviation
+    // brings back what was typed.
     bool TypingState::restoreDroppedWord(ngosen::KeyPress& keyEvent) {
         std::string deletedPart;
         std::string addedPart;

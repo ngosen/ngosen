@@ -926,6 +926,46 @@ fn shorthand_leaves_a_longer_own_macro_reachable() {
     }
 }
 
+/// What the front end does on Backspace right after an expansion: the field shows `key` again and
+/// the word reopens.
+fn take_back(e: &mut BambooEngine, key: &str) {
+    assert_eq!(e.dropped_word, key);
+    e.pull_commit();
+    e.reopen_committed(key);
+    assert_eq!(e.get_preedit_string(), key);
+}
+
+#[test]
+fn backspace_gives_an_abbreviation_back() {
+    for (keys, key) in [("ko ", "ko"), ("Hnay ", "Hnay"), ("ddag ", "đag")] {
+        let mut e = shorthand_engine("Telex");
+        type_keys(&mut e, keys);
+        take_back(&mut e, key);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{key} "), "the key taken back stays");
+        type_keys(&mut e, keys);
+        assert_ne!(e.commit_text, keys, "the next one expands again");
+    }
+}
+
+#[test]
+fn an_abbreviation_ended_by_punctuation_is_not_given_back() {
+    let mut e = shorthand_engine("Telex");
+    type_keys(&mut e, "ko,");
+    assert_eq!(e.commit_text, "không,");
+    assert_eq!(e.dropped_word, "");
+}
+
+#[test]
+fn an_own_macro_is_not_given_back() {
+    let mut e = shorthand_engine("Telex");
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("ko", "kansas")]);
+    type_keys(&mut e, "ko ");
+    assert_eq!(e.commit_text, "kansas ");
+    assert_eq!(e.dropped_word, "");
+}
+
 #[test]
 fn shorthand_is_off_without_a_table() {
     let mut e = engine_with_default_settings("Telex");
@@ -2986,6 +3026,20 @@ fn a_chat_abbreviation_is_never_guessed_again() {
     let mut field = Vec::new();
     type_into(&mut e, &mut field, &[("bn", ' '), ("phim", '.')]);
     assert_eq!(field, ["ban", "phím"]);
+}
+
+#[test]
+fn an_abbreviation_taken_back_is_not_guessed_or_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.shorthand = macro_table(&[("toi", "tao")]);
+    type_keys(&mut e, "toi ");
+    take_back(&mut e, "toi");
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("", ' '), ("go", '.')]);
+    assert_eq!(field[0], "toi");
+    e.reset();
+    assert!(dictionary.lock().unwrap().is_empty());
 }
 
 #[test]

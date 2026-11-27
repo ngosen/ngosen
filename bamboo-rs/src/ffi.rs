@@ -634,7 +634,8 @@ pub unsafe extern "C" fn EngineRestoreText(engine: usize, text: *const c_char) -
         .unwrap_or(std::ptr::null_mut())
 }
 
-/// The word as shown before the last key split it or dropped its tail; empty otherwise.
+/// The word as shown before the last key split it, dropped its tail, or expanded it as a chat
+/// abbreviation; empty otherwise.
 #[unsafe(no_mangle)]
 pub extern "C" fn EnginePullDroppedWord(engine: usize) -> *mut c_char {
     handles::with_engine(engine, |e| c_string(&std::mem::take(&mut e.dropped_word)))

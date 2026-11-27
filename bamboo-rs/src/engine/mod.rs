@@ -350,7 +350,8 @@ pub struct BambooEngine {
     kept: Option<KeptWord>,
     /// Set for the next key only, where Backspace can bring the dropped keys back.
     pub(crate) drop_kept_tail: bool,
-    /// The word as shown before Space split it or dropped the keys after it.
+    /// The word as shown before Space split it, dropped the keys after it, or expanded it as a
+    /// chat abbreviation.
     pub(crate) dropped_word: String,
     pub(crate) auto_non_vn_restore: bool,
     pub(crate) dd_free_style: bool,
@@ -381,9 +382,15 @@ pub struct BambooEngine {
     commits_macro: bool,
     /// That text is a chat abbreviation's, which Đoán dấu leaves as written.
     commits_abbreviation: bool,
+    /// The chat abbreviation the last key expanded, as typed.
+    expanded_from: String,
+    /// A chat abbreviation taken back by Backspace: the open word stays as typed while it is this.
+    taken_back: Option<String>,
     /// Whether a macro put the last text committed there: text taken back from it is still the
     /// macro's.
     last_commit_macro: bool,
+    /// The same for a chat abbreviation.
+    last_commit_abbreviation: bool,
     /// A field that has been a password or sensitive field, which never reaches Đoán dấu again.
     pub(crate) private_field: bool,
 }
@@ -423,7 +430,10 @@ impl BambooEngine {
             committed_now: false,
             commits_macro: false,
             commits_abbreviation: false,
+            expanded_from: String::new(),
+            taken_back: None,
             last_commit_macro: false,
+            last_commit_abbreviation: false,
             private_field: false,
         }
     }
@@ -468,6 +478,9 @@ impl BambooEngine {
             && let Some(text) = self.macro_table.get(word)
         {
             return Some((self.expand_macro(word, text), false));
+        }
+        if self.taken_back.as_deref() == Some(word) {
+            return None;
         }
         Some((self.abbreviation_text(word)?, true))
     }
@@ -1022,6 +1035,11 @@ impl BambooEngine {
             self.preeditor.reset();
             self.commits_macro = true;
             self.commits_abbreviation = abbreviation;
+            // After a comma or a full stop Backspace takes that key, as it does after any word.
+            if abbreviation && key == ' ' {
+                self.dropped_word = old_text.to_string();
+                self.expanded_from = old_text.to_string();
+            }
             return (format!("{expanded}{key}"), true);
         }
         if let Some(kept) = &self.kept {
@@ -1105,8 +1123,10 @@ impl BambooEngine {
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
         let typed = !std::mem::take(&mut self.commits_macro);
         let written = std::mem::take(&mut self.commits_abbreviation);
+        self.taken_back = None;
         if !s.is_empty() {
             self.last_commit_macro = !typed;
+            self.last_commit_abbreviation = written;
         }
         // Taken out while it asks this engine for the words near the keys.
         if !self.private_field
@@ -1327,6 +1347,7 @@ impl BambooEngine {
     /// Returns whether the key was used; the caller forwards it to the app otherwise.
     pub fn process_key_event(&mut self, key_val: u32, state: u32) -> bool {
         self.dropped_word.clear();
+        self.expanded_from.clear();
         self.fix_undoable = false;
         self.earlier_fix_undoable = false;
         self.committed_now = false;
@@ -1718,9 +1739,13 @@ impl BambooEngine {
     /// Takes back text of the last commit to type on, as Backspace right after it does: a
     /// macro's text stays the macro's.
     pub fn reopen_committed(&mut self, text: &str) {
-        let from_macro = self.last_commit_macro;
+        let (from_macro, from_abbreviation) =
+            (self.last_commit_macro, self.last_commit_abbreviation);
+        let taken_back = (!text.is_empty() && self.expanded_from == text).then(|| text.to_string());
         self.rebuild_from_text(text);
         self.commits_macro = from_macro;
+        self.commits_abbreviation = from_abbreviation;
+        self.taken_back = taken_back;
     }
 
     pub fn rebuild_from_text(&mut self, text: &str) {

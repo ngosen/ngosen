@@ -1312,6 +1312,26 @@ namespace {
             bool learned = true;
             typeGuessingInApp(reports, mode, "hnay.", {.shorthand = true, .learned = &learned});
             check(!learned, "chat shorthand: Đoán dấu never learns an expansion" + name, "learned");
+            // The preedit holds the key given back until the next key commits it.
+            text = typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true});
+            check(text == "ko.", "chat shorthand: Backspace right after gives the key back" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \b ko ", {.shorthand = true});
+            check(text == "ko không ", "chat shorthand: the key given back stays, the next one expands" + name, text);
+            text = typeGuessingInApp(reports, mode, "Hnay,\b.", {.shorthand = true});
+            check(text == "Hôm nay.", "chat shorthand: Backspace after a comma takes the comma" + name, text);
+            // A preedit field that shows no text cannot have a word deleted from it.
+            text = typeGuessingInApp(makeField("wayland", false), mode, "ko \b.", {.shorthand = true});
+            check(text == (mode == ngosen::Mode::Sen ? "ko." : "không."), "chat shorthand: Backspace where the field shows nothing" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \x17", {.shorthand = true});
+            check(text == "không", "chat shorthand: Ctrl+Backspace keeps the expansion" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \x7f\b", {.shorthand = true});
+            check(text == "không", "chat shorthand: Backspace after another key takes only the space" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \b", {.pageAt = 3, .pageShows = "XYZ ", .shorthand = true});
+            check(text == "XYZ", "chat shorthand: Backspace leaves text the page changed" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .macros = {{"ko", "kansas"}}});
+            check(text == "kansas.", "chat shorthand: the user's own macro is not given back" + name, text);
+            typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .learned = &learned});
+            check(!learned, "chat shorthand: Đoán dấu never learns a key given back" + name, "learned");
         }
         const std::string text = typeGuessingInApp(reports, ngosen::Mode::Off, "e ko ", {.shorthand = true, .macrosWhileOff = true, .macros = {{"e", "em"}}});
         check(text == "em ko ", "chat shorthand: off while Vietnamese is off, where the user's macros still expand", text);

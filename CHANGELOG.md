@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.4-1] — 27/11/2026
+
+Trên KDE Plasma (Wayland), WPS Office gõ được tiếng Việt mà không cần tự đặt `QT_IM_MODULE=fcitx`, kể cả khi cài Ngó Sen từ kho gói hay AUR hoặc cài WPS sau (#1032).
+Tải ở [ngosen-1.14.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.4-1).
+
 ### Sửa
 
 - Trên KDE Plasma (Wayland), WPS Office gõ được tiếng Việt mà không cần tự đặt `QT_IM_MODULE=fcitx`, kể cả khi cài

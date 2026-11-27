@@ -1,0 +1,17 @@
+diacritics.timsen is the small table of Tim Sen (https://github.com/ngosen/timsen): counts of
+syllables and of two- and three-syllable sequences, written by research.table. It holds no running
+text from the corpora it was counted in:
+
+- Vietnamese Wikipedia (wikimedia/wikipedia 20231101.vi), CC BY-SA 4.0,
+  https://creativecommons.org/licenses/by-sa/4.0/
+- FineWeb-2 vie_Latn (https://huggingface.co/datasets/HuggingFaceFW/fineweb-2), made available by
+  Hugging Face under the Open Data Commons Attribution License (ODC-By) v1.0,
+  https://opendatacommons.org/licenses/by/1-0/, plus the Common Crawl terms of use
+- OpenSubtitles 2018, monolingual Vietnamese, from OPUS (https://opus.nlpl.eu), subtitles from
+  http://www.opensubtitles.org/. P. Lison and J. Tiedemann, 2016, "OpenSubtitles2016: Extracting
+  Large Parallel Corpora from Movie and TV Subtitles", LREC 2016. OPUS releases it without a
+  licence; only counts are shipped.
+
+The counts are licensed under CC BY-SA 4.0.
+
+SPDX-License-Identifier: CC-BY-SA-4.0 AND ODC-By-1.0

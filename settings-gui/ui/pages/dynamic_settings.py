@@ -21,6 +21,7 @@ from core.catalog import (
     MODE_SHORTCUT_KEYS,
     MODE_SHORTCUT_TO_VISIBILITY,
     MODE_SWITCHING,
+    PAGE_TITLES,
     SETTINGS_MAP,
     TRAY_ICON,
     TRAY_IMAGE_BUTTONS,
@@ -31,11 +32,12 @@ from core.catalog import (
     shown_mode,
 )
 from core.dbus_handler import NgoSenDBusHandler
+from core.learned import Learned, how_it_learns
 from core.settings_model import SettingsModel
 from core.teencode_apps import TeencodeApps, toggle_hint
 from i18n import _
 from qtpy.QtCore import QEvent, QSize, Qt, QTimer
-from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
+from qtpy.QtGui import QColor, QFontDatabase, QIcon, QPalette, QPixmap
 from qtpy.QtWidgets import (
     QWIDGETSIZE_MAX,
     QButtonGroup,
@@ -48,6 +50,7 @@ from qtpy.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPlainTextEdit,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -66,6 +69,7 @@ from ui.components import (
     Row,
     SingleKeyCaptureWidget,
 )
+from ui.confirm import confirm
 from ui.convert_box import ConvertBox
 from ui.toolkit_switch import toolkit_field
 from ui.typography import emphasize, mute, page_title
@@ -210,6 +214,7 @@ class DynamicSettingsPage(QWidget):
         self._retone_note = None
         self._convert_box = None
         self._teencode = None
+        self._learned = None
         self._following = False
 
         self._setup_ui()
@@ -238,6 +243,9 @@ class DynamicSettingsPage(QWidget):
         """Force layout refresh when page becomes visible to fix initialization overflow."""
         super().showEvent(event)
         QTimer.singleShot(0, self._refresh_list_layouts)
+        # Text typed in this window since, such as in Try it, is learned too.
+        if self._learned is not None:
+            self._show_learned()
 
     def _refresh_list_layouts(self):
         """Recalculate heights for all QListWidgets once the window has final dimensions."""
@@ -287,6 +295,7 @@ class DynamicSettingsPage(QWidget):
             self._retone_note = None
             self._convert_box = None
             self._teencode = None
+            self._learned = None
             self._mode_hint = None
             self._mode_buttons = {}
             self._tray_preview = None
@@ -297,7 +306,8 @@ class DynamicSettingsPage(QWidget):
                 return
 
             if not self.property("inTab"):
-                self.container_layout.addWidget(page_title(_(self.category.name.capitalize())))
+                title = PAGE_TITLES.get(self.category, self.category.name.capitalize())
+                self.container_layout.addWidget(page_title(_(title)))
             if self._tip:
                 line = TipLine(_("Tip: {}").format(_(self._tip["text"])))
                 if self._on_tip:
@@ -306,6 +316,13 @@ class DynamicSettingsPage(QWidget):
                 row.addWidget(line)
                 row.addStretch()
                 self.container_layout.addLayout(row)
+            if self.category == SettingsCategory.GUESSING:
+                self._table_note = HintLabel(
+                    _("The guessing table is not installed, so Đoán dấu cannot add marks yet.")
+                )
+                self._table_note.searchable = False
+                self._table_note.hide()
+                self.container_layout.addWidget(self._table_note)
             older = page_status.older_fcitx_line(self.model, self.category)
             if older:
                 note = HintLabel(older)
@@ -368,6 +385,8 @@ class DynamicSettingsPage(QWidget):
                 try_it.setPlaceholderText(_("Type here to test"))
                 try_it.setFont(brand.sized_font(17))
                 self.form.addRow(_("Try it:"), try_it)
+            if self.category == SettingsCategory.GUESSING:
+                self.form.addRow(_("Learned") + ":", self._learned_section())
             if self.category == SettingsCategory.CONVERT:
                 self.form.addRow(self._separator())
                 self._convert_box = ConvertBox(self.model, self.dbus)
@@ -490,8 +509,119 @@ class DynamicSettingsPage(QWidget):
                 )
         self._show_teencode_apps()
 
+    def _learned_section(self):
+        # Not in DEPENDS: what was learned can be seen and forgotten with guessing off.
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        buttons = QHBoxLayout()
+        self._view_button = QPushButton(_("View"))
+        self._view_button.clicked.connect(self._toggle_learned_view)
+        forget = QPushButton(_("Forget all…"))
+        forget.clicked.connect(self._forget_learned)
+        buttons.addWidget(self._view_button)
+        buttons.addWidget(forget)
+        buttons.addStretch()
+        layout.addLayout(buttons)
+        self._learned_line = HintLabel("")
+        self._learned_line.searchable = False
+        mute(self._learned_line)
+        layout.addWidget(self._learned_line)
+        self._learned_view = QPlainTextEdit()
+        self._learned_view.setReadOnly(True)
+        self._learned_view.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self._learned_view.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
+        self._learned_view.setAccessibleName(_("What Đoán dấu learned"))
+        self._learned_view.searchable = False
+        self._learned_view.hide()
+        layout.addWidget(self._learned_view)
+        layout.addWidget(self._how_it_learns())
+        self._learned = Learned(self.dbus)
+        return section
+
+    def _how_it_learns(self):
+        box = QWidget()
+        layout = QVBoxLayout(box)
+        layout.setContentsMargins(0, 4, 0, 0)
+        toggle = QToolButton()
+        toggle.setText(_("How it learns and where it is kept"))
+        toggle.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        toggle.setArrowType(Qt.RightArrow)
+        toggle.setCheckable(True)
+        toggle.setAutoRaise(True)
+        layout.addWidget(toggle)
+        lines = QWidget()
+        lines_layout = QVBoxLayout(lines)
+        lines_layout.setContentsMargins(toggle.iconSize().width() + 8, 0, 0, 0)
+        for text in how_it_learns():
+            line = HintLabel(text)
+            line.searchable = False
+            line.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            lines_layout.addWidget(line)
+        lines.hide()
+        layout.addWidget(lines)
+
+        def show(on):
+            toggle.setArrowType(Qt.DownArrow if on else Qt.RightArrow)
+            lines.setVisible(on)
+
+        toggle.toggled.connect(show)
+        self._how_it_learns_toggle = toggle
+        self._how_it_learns_lines = lines
+        return box
+
+    def _show_learned(self):
+        status = self._learned.status()
+        self._learned_line.setText(status.line)
+        self._table_note.setVisible(status.table_missing)
+        if self._learned_view.isVisible():
+            self._fill_learned_view()
+
+    def _fill_learned_view(self):
+        text, failed = self._learned.view()
+        if failed:
+            self._hide_learned_view()
+            self._page_message(failed, error=True)
+            return
+        self._learned_view.setPlainText(text)
+        self._learned_view.show()
+        self._view_button.setText(_("Hide"))
+
+    def _hide_learned_view(self):
+        self._learned_view.hide()
+        self._learned_view.clear()
+        self._view_button.setText(_("View"))
+
+    def _toggle_learned_view(self):
+        if self._learned_view.isVisible():
+            self._hide_learned_view()
+        else:
+            self._fill_learned_view()
+
+    def _forget_learned(self):
+        if not confirm(
+            self,
+            _("Forget what Đoán dấu learned?"),
+            _(
+                "Đoán dấu will guess from its table alone, as on a new machine."
+                " This cannot be undone."
+            ),
+            _("Forget all"),
+        ):
+            return
+        forgot, line = self._learned.forget()
+        self._page_message(line, error=not forgot)
+        self._show_learned()
+
+    def _page_message(self, text, error=False):
+        window = self.window()
+        if hasattr(window, "show_page_message"):
+            window.show_page_message(text, error=error)
+
     def refresh_status(self):
         """Shows the notes that depend on what fcitx5 holds, without rebuilding the page."""
+        if self._learned is not None:
+            self._show_learned()
         if self._teencode is not None:
             # The Keys page keeps its own copy of the settings, so ask fcitx5.
             self._show_teencode_hint((self.dbus.get_config() or {}).get("values"))
@@ -500,7 +630,9 @@ class DynamicSettingsPage(QWidget):
             if apps != self._teencode.apps:
                 self._teencode.apps = apps
                 self._show_teencode_apps()
-        if self._custom_hint is None and self._retone_note is None:
+        # Guessing can be turned on from another window while this one is open.
+        follows = self.category == SettingsCategory.GUESSING
+        if self._custom_hint is None and self._retone_note is None and not follows:
             return
         model = page_status.read(self.dbus)
         if model is not None:
@@ -1024,7 +1156,7 @@ class DynamicSettingsPage(QWidget):
         """Resets current values to engine defaults."""
         self.blockSignals(True)
         try:
-            defaults = self.model.defaults()
+            defaults = self.model.reset_values()
             if defaults is not None:
                 self.load_config(values=defaults)
         finally:

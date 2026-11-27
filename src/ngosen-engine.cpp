@@ -148,6 +148,14 @@ namespace fcitx {
 #endif
         }
 
+        std::filesystem::path userDataDir() {
+#if NGOSEN_USE_MODERN_FCITX_API
+            return StandardPaths::global().userDirectory(StandardPathsType::Data) / "ngosen";
+#else
+            return std::filesystem::path(StandardPath::global().userDirectory(StandardPath::Type::Data)) / "ngosen";
+#endif
+        }
+
         void migrateLegacyMode(RawConfig& config) {
             if (const auto* mode = config.valueByPath("Mode"); mode != nullptr && isFormerSenModeName(*mode)) {
                 config.setValueByPath("Mode", "Sen");
@@ -521,6 +529,35 @@ namespace fcitx {
         return nullptr;
     }
 
+    std::pair<std::string, std::string> NgoSenEngine::diacriticsStatus() const {
+        if (!diacritics_)
+            return {options_.guessDiacritics ? "missing" : "off", ""};
+        const ngosen::UniqueCPtr<char> problem(DiacriticsProblem(diacritics_.handle()));
+        return {"loaded", problem ? problem.get() : ""};
+    }
+
+    std::pair<std::string, std::string> NgoSenEngine::saveLearned() {
+        uint8_t                        written = 0;
+        const ngosen::UniqueCPtr<char> error(DiacriticsSaveNow(diacritics_.handle(), &written));
+        if (error) {
+            NGOSEN_WARN(std::string("Could not save what Đoán dấu learned: ") + error.get());
+            return {"failed", error.get()};
+        }
+        return {written != 0 ? "saved" : "unchanged", ""};
+    }
+
+    std::pair<bool, std::string> NgoSenEngine::forgetLearned() {
+        // Kept while Đoán dấu is off, and saved at exit, so it must forget too.
+        const std::string              learned = (userDataDir() / "learned-diacritics").string();
+        const ngosen::UniqueCPtr<char> error(diacritics_ ? DiacriticsForget(diacritics_.handle()) : DiacriticsRemoveFiles(learned.c_str()));
+        if (error) {
+            NGOSEN_WARN(std::string("Could not forget what Đoán dấu learned: ") + error.get());
+            return {false, error.get()};
+        }
+        NGOSEN_INFO("Đoán dấu forgot what it learned.");
+        return {true, ""};
+    }
+
     bool NgoSenEngine::gnomePortalAnswered() const {
 #ifdef NGOSEN_HAS_DBUS
         if (gnomeShell_)
@@ -530,6 +567,7 @@ namespace fcitx {
     }
 
     NgoSenEngine::~NgoSenEngine() {
+        DiacriticsSave(diacritics_.handle(), 1);
         stop_flag_monitor.store(true, std::memory_order_release);
         if (mouse_thread.joinable()) {
             mouse_thread.join();
@@ -622,6 +660,42 @@ namespace fcitx {
             NGOSEN_WARN(std::string("Word list not found: ") + path);
     }
 
+    // Opened once and kept when turned off: the table is read whole, and a field may still hold it.
+    void NgoSenEngine::openDiacritics() {
+        if (diacritics_ || !options_.guessDiacritics)
+            return;
+        const auto      dir = userDataDir();
+        std::error_code error;
+        std::filesystem::create_directories(dir, error);
+        // The dictionary learns from what the user typed; keep it from other users.
+        std::filesystem::permissions(dir, std::filesystem::perms::owner_all, error);
+        std::string table = (dir / "diacritics.timsen").string();
+        // A directory the user cannot read must not stop the settings from loading.
+        if (!std::filesystem::exists(table, error)) {
+#if NGOSEN_USE_MODERN_FCITX_API
+            table = StandardPaths::global().locate(StandardPathsType::PkgData, "ngosen/diacritics.timsen").string();
+#else
+            table = StandardPath::global().locate(StandardPath::Type::PkgData, "ngosen/diacritics.timsen");
+#endif
+        }
+        const std::string learned = (dir / "learned-diacritics").string();
+        diacritics_.reset(DiacriticsOpen(table.c_str(), learned.c_str()));
+        if (!diacritics_) {
+            NGOSEN_WARN("Đoán dấu has no table: put one at " + (dir / "diacritics.timsen").string());
+            return;
+        }
+        if (const ngosen::UniqueCPtr<char> problem(DiacriticsProblem(diacritics_.handle())); problem)
+            NGOSEN_WARN("Đoán dấu could not read what it learned, so it learns nothing new: " + std::string(problem.get()));
+        // Saving after every word would wear out the disk for little.
+        constexpr uint64_t saveEveryUs = 5ULL * 60 * 1000 * 1000;
+        saveDiacriticsTimer_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + saveEveryUs, 0, [this](EventSourceTime* source, uint64_t) {
+            DiacriticsSave(diacritics_.handle(), 0);
+            source->setNextInterval(saveEveryUs);
+            source->setOneShot();
+            return true;
+        });
+    }
+
     void NgoSenEngine::announceRelease(const std::string& release) {
 #ifdef NGOSEN_HAS_NOTIFICATIONS
         NGOSEN_INFO("Announcing release " + release);
@@ -641,6 +715,36 @@ namespace fcitx {
                 _("Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for "
                   "more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
+            return false;
+        });
+#endif
+    }
+
+    void NgoSenEngine::announceLearning() {
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        const bool learning = diacritics_ && options_.guessDiacritics && options_.learnDiacritics;
+        if (!learning || *config_.learningAnnounced || (announceLearningTimer_ && announceLearningTimer_->isEnabled()))
+            return;
+        // Waits like announceRelease, for the desktop to come up.
+        constexpr uint64_t delayUs = 5000000;
+        announceLearningTimer_     = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this](EventSourceTime*, uint64_t) {
+            // Learning may have been turned off while this waited.
+            if (*config_.learningAnnounced || !options_.guessDiacritics || !options_.learnDiacritics)
+                return false;
+            auto* addon = notifications();
+            if (addon == nullptr) {
+                NGOSEN_WARN("No notifications addon; that Đoán dấu learns is not announced");
+                return false;
+            }
+            constexpr int32_t neverExpire = 0;
+            addon->call<INotifications::sendNotification>(
+                "fcitx", 0, "fcitx-ngosen", _("Đoán dấu learns how you type"),
+                _("To guess marks better, it keeps the words you type with marks on this computer. See what it learned, forget it or "
+                  "turn learning off on the Word guessing page."),
+                std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "guessing"}); }, [](uint32_t) {});
+            // Marked only once sent, so a session without notifications tries again next time.
+            config_.learningAnnounced.setValue(true);
+            saveConfig();
             return false;
         });
 #endif
@@ -723,6 +827,11 @@ namespace fcitx {
         o.retypeAfterSwitch              = config_.retypeAfterSwitch.value();
         o.retoneSelection                = config_.retoneSelection.value();
         o.rawWordAfterSlash              = config_.rawWordAfterSlash.value();
+        o.guessDiacritics                = config_.guessDiacritics.value();
+        o.guessFixesTypos                = config_.guessFixesTypos.value();
+        o.guessFixStrength               = static_cast<int>(config_.guessFixStrength.value());
+        o.guessInTerminals               = config_.guessInTerminals.value();
+        o.learnDiacritics                = config_.learnDiacritics.value();
         o.emojiSuggestions               = config_.emojiSuggestions.value();
         o.yahooEmoticons                 = config_.yahooEmoticons.value();
         o.englishEmojiKeywords           = config_.englishEmojiKeywords.value();
@@ -753,6 +862,11 @@ namespace fcitx {
     void NgoSenEngine::populateConfig() {
         ngosen::setUiVietnamese(*config_.uiLanguage == UiLanguage::Vietnamese);
         syncOptions();
+        openDiacritics();
+        // Kept open while Đoán dấu is off, so it learns nothing then either.
+        if (diacritics_)
+            DiacriticsSetLearning(diacritics_.handle(), options_.guessDiacritics && options_.learnDiacritics ? 1 : 0);
+        announceLearning();
         refreshEngine();
         refreshOption();
         updateInputMethodAction(nullptr);

@@ -19,6 +19,7 @@
 #include "ngosen-xtest.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -26,6 +27,8 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#include <unistd.h>
 
 using ngosen::Field;
 using ngosen::test::FakeHost;
@@ -281,6 +284,279 @@ namespace {
         for (const auto& commit : host->commits())
             text += commit;
         return text + host->preedit();
+    }
+
+    std::string typeGuessing(const Field& field, const std::string& typed, bool on = true, bool inTerminals = false) {
+        FakeResources resources;
+        resources.mutableOptions().guessDiacritics  = on;
+        resources.mutableOptions().guessInTerminals = inTerminals;
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        return ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 50));
+    }
+
+    struct GuessRun {
+        size_t                                           pageAt = 0; // after this many keys the page alone sets the field to pageShows
+        std::string                                      pageShows;
+        std::string                                      suggests; // or adds this after the cursor, selected, as autofill does
+        ngosen::test::AppQuirks                          quirks;
+        bool                                             doubleSpace = false;
+        bool                                             fixesTypos  = false;
+        int                                              fixStrength = 0;
+        bool                                             guess       = true;
+        bool                                             inTerminals = false;
+        std::vector<std::pair<std::string, std::string>> macros;
+        int                                              keyMs   = 50;
+        bool*                                            learned = nullptr; // set to whether Đoán dấu learned anything
+    };
+
+    std::string learnedFile();
+
+    // Types into a FakeApp; \b in `typed` is a Backspace, and ~ after a key sends the next one right after it.
+    std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, const GuessRun& run = {}) {
+        realMode = mode;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().guessDiacritics     = run.guess;
+        resources.mutableOptions().doubleSpaceToPeriod = run.doubleSpace;
+        resources.mutableOptions().guessFixesTypos     = run.fixesTypos;
+        resources.mutableOptions().guessFixStrength    = run.fixStrength;
+        resources.mutableOptions().guessInTerminals    = run.inTerminals;
+        if (!run.macros.empty())
+            resources.setMacros(run.macros);
+        const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
+        if (run.learned != nullptr)
+            resources.learnDiacriticsInto(learned);
+        auto                   owned = std::make_unique<ngosen::test::FakeApp>(loop, field, run.quirks);
+        ngosen::test::FakeApp* app   = owned.get();
+        ngosen::TypingState    state(&resources, std::move(owned));
+        app->attach(&state);
+        for (size_t i = 0; i < typed.size(); ++i) {
+            if (typed[i] == '~')
+                continue;
+            if (i == run.pageAt && !run.pageShows.empty()) {
+                app->pageShowsCell(run.pageShows);
+                loop.pump(50);
+            }
+            if (i == run.pageAt && !run.suggests.empty()) {
+                app->suggest(run.suggests, true);
+                loop.pump(50);
+            }
+            app->type(typed[i] == '\b' ? ngosen::key::BackSpace : static_cast<uint32_t>(typed[i]));
+            loop.pump(i + 1 < typed.size() && typed[i + 1] == '~' ? 2 : run.keyMs);
+        }
+        loop.pump(300);
+        if (run.learned != nullptr) {
+            // Đoán dấu learns a run when it ends.
+            state.reset(true);
+            *run.learned = resources.learnedDiacritics();
+            std::filesystem::remove(learned);
+        }
+        return app->text();
+    }
+
+    void testGuessAfterFieldShowsText();
+    void testGuessProbeLearnsNothing();
+
+    void testDiacriticGuess() {
+        const Field reports = makeField("wayland", true);
+        std::string text    = typeGuessing(reports, "toi go phim ");
+        check(text == "tôi gõ phím ", "Đoán dấu: words typed without marks get them", text);
+        text = typeGuessing(reports, "ban phim.");
+        check(text == "bàn phím.", "Đoán dấu: an earlier word changes where the field shows it", text);
+        text = typeGuessing(makeField("wayland", false), "ban phim.");
+        check(text == "bạn phím.", "Đoán dấu: only the last word changes where the field shows nothing", text);
+        text = typeGuessing(makeField("xim", false), "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: off by default in an XIM app, which reports no text", text);
+        Field terminal    = reports;
+        terminal.terminal = true;
+        text              = typeGuessing(terminal, "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: off by default in a terminal", text);
+        const Field konsole = makeField("wayland", true, "org.kde.konsole");
+        text                = typeGuessing(konsole, "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: off by default in a terminal that sets no terminal flag", text);
+        text = typeGuessing(makeField("dbus", false, "xfce4-terminal"), "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: off by default in xfce4-terminal, whose flags match a GTK editor", text);
+        text = typeGuessing(konsole, "toi go phim ", true, true);
+        check(text == "tôi gõ phím ", "Đoán dấu: in a terminal when asked to", text);
+        text = typeGuessing(makeField("wayland", true, "code"), "toi go phim ");
+        check(text == "tôi gõ phím ", "Đoán dấu: on in an editor that may hold a terminal", text);
+        text = typeGuessing(makeField("ibus", true), "toi go phim ");
+        check(text == "tôi gõ phím ", "Đoán dấu: on in a field whose text comes late", text);
+        text = typeGuessing(reports, "toi go phim ", false);
+        check(text == "toi go phim ", "Đoán dấu: off by default", text);
+        Field password    = reports;
+        password.password = true;
+        text              = typeGuessing(password, "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: never in a password field", text);
+
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().guessDiacritics = true;
+        auto                owned                  = std::make_unique<FakeHost>(loop, makeField("wayland", false));
+        FakeHost*           host                   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        for (char c : std::string("toi go phim "))
+            press(state, static_cast<uint32_t>(c));
+        check(join(host->commits()) == "['tôi ']['gõ ']['phím ']", "Đoán dấu: the preedit commits each word with its marks", join(host->commits()));
+        const auto preedit = ngosen::Mode::Preedit;
+        text               = typeGuessingInApp(reports, preedit, "ban phim.");
+        check(text == "bàn phím.", "Đoán dấu: the preedit changes an earlier word where the field shows it", text);
+        text = typeGuessingInApp(makeField("wayland", false), preedit, "ban phim.");
+        check(text == "bạn phím.", "Đoán dấu: the preedit changes only the last word where the field shows nothing", text);
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban phim.", {.pageAt = 4, .pageShows = "bam "});
+        check(text == "bam phim.", "Đoán dấu: an earlier word the page changed stays as the page left it", text);
+        text = typeGuessingInApp(reports, preedit, "ban phim.", {.pageAt = 4, .pageShows = "bam "});
+        check(text == "bam phim.", "Đoán dấu: the preedit leaves an earlier word the page changed", text);
+        for (const auto mode : {ngosen::Mode::Sen, preedit}) {
+            const std::string name = mode == preedit ? " (preedit)" : "";
+            text                   = typeGuessingInApp(reports, mode, "ban phimsc \b");
+            check(text == "bàn phím", "Đoán dấu: Backspace after a change to an earlier word takes only the space" + name, text);
+        }
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "toi ", {.pageAt = 3, .pageShows = "XYZ"});
+        check(text == "XYZ ", "Đoán dấu: a word the page replaced stays as the page left it", text);
+        text = typeGuessingInApp(makeField("ibus", true, "konsole"), ngosen::Mode::Sen, "toi go phim ", {.quirks = {.reportsEmptyText = true}});
+        check(text == "toi go phim ", "Đoán dấu: off by default in Konsole over IBus", text);
+        for (const auto mode : {ngosen::Mode::Sen, preedit}) {
+            text = typeGuessingInApp(makeField("ibus", true), mode, "toi go phim ", {.quirks = {.reportsTextOnceFilled = true}});
+            check(text == "tôi gõ phím ", std::string("Đoán dấu: the first word in an empty field that reports text once filled") + (mode == preedit ? " (preedit)" : ""), text);
+        }
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban phim.", {.quirks = {.reportsEmptyText = true}});
+        check(text == "bạn phím.", "Đoán dấu: a field that reports no text changes only the last word", text);
+        Field address = reports;
+        address.url   = true;
+        text          = typeGuessingInApp(address, preedit, "ban phim.ab ", {.quirks = {.reportDelayMs = 60, .lagMs = 40}, .keyMs = 5});
+        check(text == "bạn phím.ab ", "Đoán dấu: a lagging field keeps earlier words, and keys typed after stay in order", text);
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban  phim.", {.doubleSpace = true});
+        check(text == "bạn. phím.", "Đoán dấu: the word after a double space still gets its marks", text);
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "toi ", {.pageAt = 3, .suggests = "XYZ"});
+        check(text == "toi ", "Đoán dấu: a word with a selected suggestion after it stays as typed", text);
+        text = typeGuessingInApp(address, preedit, "ban phim.~abc ", {.quirks = {.keyStepMs = 30}});
+        check(text == "bàn phím.abc ", "Đoán dấu: a key typed while the preedit changes an earlier word is typed once", text);
+        for (const auto mode : {ngosen::Mode::Sen, preedit}) {
+            const std::string name = mode == preedit ? " (preedit)" : "";
+            text                   = typeGuessingInApp(reports, mode, "toi go phmi ", {.fixesTypos = true});
+            check(text == "tôi gõ phím ", "Đoán dấu: a syllable typed wrong is fixed" + name, text);
+            text = typeGuessingInApp(reports, mode, "toi go phmi \b ", {.fixesTypos = true});
+            check(text == "tôi gõ phmi ", "Đoán dấu: Backspace right after a fix brings back what was typed" + name, text);
+            text = typeGuessingInApp(makeField("wayland", false), mode, "toi go phmi \b ", {.fixesTypos = true});
+            check(text == "tôi gõ phím ", "Đoán dấu: Backspace after a fix in a field that shows nothing only deletes" + name, text);
+            text = typeGuessingInApp(reports, mode, "toi go phmi2 \b ", {.fixesTypos = true});
+            check(text.find('2') != std::string::npos, "Đoán dấu: Backspace after a fixed word with a digit keeps the digit" + name, text);
+            // bna wins by between 3 and 4, bihn by between 2 and 3.
+            for (const auto& [strength, fixed] : {std::pair{0, "tôi gõ bna bihn "}, {1, "tôi gõ bạn bihn "}, {2, "tôi gõ bạn bình "}}) {
+                text = typeGuessingInApp(reports, mode, "toi go bna bihn ", {.fixesTypos = true, .fixStrength = strength});
+                check(text == fixed, "Đoán dấu: fixing strength " + std::to_string(strength) + " fixes what wins by its margin" + name, text);
+            }
+            text = typeGuessingInApp(reports, mode, "ban \bf ");
+            check(text == "bàn ", "Đoán dấu: Backspace reopens a guessed word, so a tone key changes it" + name, text);
+            bool learned = false;
+            typeGuessingInApp(reports, mode, "ngos \b.", {.learned = &learned});
+            check(learned, "Đoán dấu: learns a word typed, taken back by Backspace and typed on" + name, "nothing");
+            typeGuessingInApp(reports, mode, "nsen \b.", {.macros = {{"nsen", "ngó"}}, .learned = &learned});
+            check(!learned, "Đoán dấu: never learns a macro's word taken back by Backspace" + name, "learned");
+            if (mode == ngosen::Mode::Sen) {
+                // The undo finds a whole macro where it looks for one word, and leaves Backspace as it was.
+                text = typeGuessingInApp(reports, mode, "tgp \bf", {.fixesTypos = true, .macros = {{"tgp", "toi go phmi"}}});
+                check(!isEndsWith(text, "phímf"), "Đoán dấu: Backspace after a macro still reopens its last word", text);
+            }
+        }
+        testGuessAfterFieldShowsText();
+    }
+
+    // A show-password button changes the field without moving focus.
+    void testGuessAfterFieldShowsText() {
+        realMode        = ngosen::Mode::Preedit;
+        Field hidden    = makeField("wayland", true);
+        hidden.password = true;
+        Field shown     = hidden;
+        shown.password  = false;
+        {
+            FakeLoop      loop;
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics = true;
+            auto                owned                  = std::make_unique<FakeHost>(loop, hidden);
+            FakeHost*           host                   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            for (const char c : std::string("abc"))
+                press(state, static_cast<uint32_t>(c));
+            const std::string begun = host->preedit() + join(host->commits());
+            host->setField(shown);
+            press(state, static_cast<uint32_t>('d'));
+            check(host->preedit() == "abcd", "Đoán dấu: a word begun in a hidden field goes on once the field shows its text", begun + " -> " + host->preedit());
+        }
+        {
+            FakeLoop      loop;
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics = true;
+            const std::string learned                  = learnedFile();
+            resources.learnDiacriticsInto(learned);
+            auto                owned = std::make_unique<FakeHost>(loop, hidden);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            for (const char c : std::string("goox "))
+                press(state, static_cast<uint32_t>(c));
+            const std::string committed = join(host->commits());
+            host->setField(shown);
+            host->setSurrounding("gỗ ", 3, 3);
+            state.surroundingUpdated();
+            const bool taken = press(state, ngosen::key::BackSpace);
+            check(!taken && host->preedit().empty(), "Đoán dấu: a word typed in a hidden field stays out of reach of Backspace once the field shows its text",
+                  committed + " taken=" + std::to_string(taken) + " preedit=" + host->preedit());
+            press(state, ngosen::key::space);
+            // Đoán dấu learns a run when it ends.
+            state.reset(true);
+            check(!resources.learnedDiacritics(), "Đoán dấu: learns nothing from a word typed in a hidden field", "learned");
+            std::filesystem::remove(learned);
+        }
+        {
+            FakeLoop      loop;
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics = true;
+            const std::string learned                  = learnedFile();
+            resources.learnDiacriticsInto(learned);
+            ngosen::TypingState state(&resources, std::make_unique<FakeHost>(loop, shown));
+            for (const char c : std::string("goox "))
+                press(state, static_cast<uint32_t>(c));
+            state.reset(true);
+            check(resources.learnedDiacritics(), "Đoán dấu: learns a word typed in a field that shows its text", "nothing");
+            std::filesystem::remove(learned);
+        }
+    }
+
+    std::string learnedFile() {
+        const auto path = std::filesystem::temp_directory_path() / ("ngosen-learned-" + std::to_string(::getpid()));
+        std::filesystem::remove(path);
+        return path.string();
+    }
+
+    // A page shortcut letter is tried with the next key to see whether it starts the word; that try is
+    // not typing.
+    void testGuessProbeLearnsNothing() {
+        Field chromium            = makeField("dbus", false, "chromium.desktop");
+        chromium.keyEventOrderFix = true;
+        FakeResources resources;
+        resources.setMacros({{"s", "gõ phím."}});
+        resources.mutableOptions().guessDiacritics = true;
+        const std::string learned                  = learnedFile();
+        resources.learnDiacriticsInto(learned);
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, chromium, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        app->focusNewFieldWith("", 5);
+        loop.pump(50);
+        app->pageTakesKey(static_cast<uint32_t>('s'), "", "");
+        loop.pump(100);
+        app->type(' ');
+        loop.pump(300);
+        check(app->text() == " ", "Đoán dấu: a shortcut letter that names a macro still types only the space", app->text());
+        check(!resources.learnedDiacritics(), "Đoán dấu: learns nothing from trying the shortcut letter", "learned");
+        std::filesystem::remove(learned);
     }
 
     void testCapitalizeStartOfText() {
@@ -4049,6 +4325,13 @@ namespace {
         int preedits = -1;
         text         = typeInXterm(dbus, {}, sentence, &preedits);
         check(text == expected && preedits == 0, "a field that shows typed letters gets no preedit", text + " preedits=" + std::to_string(preedits));
+
+        FakeResources guessing;
+        guessing.mutableOptions().guessDiacritics = true;
+        const auto keys                           = keysOf(warmUp + "toi go phim ");
+
+        text = ngosen::test::typeInAppTraced(guessing, dbus, {.keepsOnlyCommits = true}, keys, std::vector<int>(keys.size(), 60)).text;
+        check(isEndsWith(text, "toi go phim "), "Đoán dấu: words typed in xterm.js stay as typed, since it never shows them", text);
     }
 
     // Coming back to a terminal from another window: its hidden textarea still holds what we committed before.
@@ -6086,6 +6369,7 @@ namespace {
             {"wayland_v2", "Alacritty", true},
             {"wayland_v2", "com.mitchellh.ghostty", true},
             {"dbus", "gnome-terminal-server", true},
+            {"dbus", "xfce4-terminal", true},
             {"dbus", "kgx", true},
             {"dbus", "ptyxis", true},
             {"ibus", "gtk4-im:ptyxis", true},
@@ -6587,6 +6871,8 @@ int main() {
     testResetAfterAppCommit();
     testLogHidesPasswords();
     testCapitalizeStartOfText();
+    testDiacriticGuess();
+    testGuessProbeLearnsNothing();
     testSenForwards("wayland", true);
     testSenForwards("wayland_v2", true);
     testSenForwards("xim", false);

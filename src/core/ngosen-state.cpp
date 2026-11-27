@@ -37,6 +37,8 @@ namespace ngosen {
     void TypingState::setEngine() {
         bambooEngine_.reset();
         bambooEngine_.reset(newBambooEngine());
+        diacritics_   = 0;
+        privateField_ = false;
         setOption();
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
@@ -66,6 +68,35 @@ namespace ngosen {
     void TypingState::setOption() {
         if (bambooEngine_)
             setOption(bambooEngine_.handle());
+    }
+
+    void TypingState::syncDiacritics() {
+        const bool                     hidden = host_->field().hidesText() || hiddenInput_;
+        const ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        const bool                     wordOpen = !oldPreBuffer_.empty() || (preedit && *preedit.get() != 0);
+        // The private engine finishes the word it holds; the new one must never get that word back.
+        if (privateField_ && !hidden && !wordOpen) {
+            lastWord_.clear();
+            droppedWord_.clear();
+            setEngine();
+        }
+        if (hidden && !privateField_) {
+            EngineSetPrivate(bambooEngine_.handle(), 1);
+            privateField_ = true;
+        }
+        const uintptr_t wanted = mode() == ngosen::Mode::Off || !guessesHere() ? 0 : engine_->diacritics();
+        if (wanted != diacritics_) {
+            EngineSetDiacritics(bambooEngine_.handle(), wanted);
+            diacritics_ = wanted;
+        }
+        if (diacritics_ == 0)
+            return;
+        const ngosen::Options& o = engine_->options();
+        // The margin a fix must win by: 4, 3 or 2 from cautious to strong.
+        EngineSetFixing(bambooEngine_.handle(), o.guessFixesTypos ? static_cast<uint8_t>(4 - std::clamp(o.guessFixStrength, 0, 2)) : 0);
+        // Earlier words are replaced only where the field shows they are still there.
+        const Surrounding s = host_->surrounding();
+        EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && s.isValid() && !s.text().empty() ? 1 : 0);
     }
 
     // An editor deletes exactly through its text, but in a terminal the shell decides what a Backspace
@@ -131,7 +162,7 @@ namespace ngosen {
         const bool               startsWord = !shownBefore || *shownBefore.get() == 0;
         // The app may change its text as soon as the preedit shows.
         const Surrounding beforeKey = startsWord ? host_->surrounding() : Surrounding();
-        if (ngosen::key::isBackspace(currentSym) && reopenWordInPreedit(keyEvent))
+        if (ngosen::key::isBackspace(currentSym) && (undoFixInPreedit(keyEvent) || reopenWordInPreedit(keyEvent)))
             return;
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone) {
             ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
@@ -153,11 +184,11 @@ namespace ngosen {
         if (auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()))) {
             if (pulled && (*pulled.get() != 0)) {
                 NGOSEN_INFO("Commit: " + logged(pulled.get()));
-                commit(pulled.get());
+                const std::string committed = commitGuessInPreedit(pulled.get(), engineTook);
                 // A key the engine leaves to the app (Enter, Ctrl+A, Tab) acts after the word, so it is not the break to take back.
                 ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
                 if (engineTook && !keyEvent.hasModifier())
-                    rememberWord(pulled.get(), dropped.get());
+                    rememberWord(committed, dropped.get());
                 if (ngosen::key::isEnter(currentSym) && !engineTook && !keyEvent.hasModifier())
                     holdEnterAfterCommit(keyEvent);
             }
@@ -355,7 +386,7 @@ namespace ngosen {
 
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (ngosen::key::isBackspace(currentSym)) {
-                if (restoreDroppedWord(keyEvent) || replaceKeysShownAsTyped(keyEvent))
+                if (undoFixInField(keyEvent) || restoreDroppedWord(keyEvent) || replaceKeysShownAsTyped(keyEvent))
                     return;
                 dropLetterForBackspace();
             } else {
@@ -499,7 +530,7 @@ namespace ngosen {
         if (word.empty())
             return;
         lastWord_.clear();
-        EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+        EngineReopenCommitted(bambooEngine_.handle(), word.c_str());
     }
 
     void TypingState::notePressOrRelease(const ngosen::KeyPress& keyEvent) {
@@ -565,11 +596,13 @@ namespace ngosen {
     void TypingState::guessLetterFieldOpenedWith(const ngosen::KeyPress& keyEvent) {
         const std::string letter(1, static_cast<char>(unseenPress_->first));
         unseenPress_.reset();
-        EngineRebuildFromText(bambooEngine_.handle(), letter.c_str());
-        EngineProcessKeyEvent(bambooEngine_.handle(), keyEvent.sym(), keyEvent.states());
-        const auto shown  = ngosen::UniqueCPtr<char>(EnginePullPreedit(bambooEngine_.handle()));
-        const auto commit = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
-        ResetEngine(bambooEngine_.handle());
+        // A try on its own engine, so Đoán dấu never learns from it.
+        CGoObject trial(newBambooEngine());
+        setOption(trial.handle());
+        EngineRebuildFromText(trial.handle(), letter.c_str());
+        EngineProcessKeyEvent(trial.handle(), keyEvent.sym(), keyEvent.states());
+        const auto shown  = ngosen::UniqueCPtr<char>(EnginePullPreedit(trial.handle()));
+        const auto commit = ngosen::UniqueCPtr<char>(EnginePullCommit(trial.handle()));
         // A key that ends the word, such as Space expanding a macro named after the letter, changes nothing in it.
         if (!shown || (commit && *commit.get() != 0) || letter + host_->keyText(keyEvent.sym()) == shown.get())
             return;
@@ -667,7 +700,7 @@ namespace ngosen {
             length = static_cast<int>(ngosen::utf8::length(word)) + 1;
         keyEvent.accept();
         deleteBeforeCursor(length);
-        EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+        EngineReopenCommitted(bambooEngine_.handle(), word.c_str());
         ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         host_->showPreedit(preedit ? preedit.get() : "", false);
         host_->refreshPreedit();
@@ -675,13 +708,17 @@ namespace ngosen {
     }
 
     void TypingState::commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& engineCommit) {
-        const std::string        commitStr = spelledAtWordEnd(engineCommit);
+        const auto               guess     = takeGuess(engineCommit, oldPreBuffer_);
+        const std::string        commitStr = spelledAtWordEnd(guess ? guess->text : engineCommit);
+        const std::string        inField   = (guess ? spelledAtWordEnd(guess->before) : "") + oldPreBuffer_;
         ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
         std::string              deletedPart;
         std::string              addedPart;
-        ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
+        ngosen::utf8::compareAndSplitStrings(inField, commitStr, deletedPart, addedPart);
 
         if (!deletedPart.empty() && keepsWordRaw(deletedPart)) {
+            if (guess)
+                dropGuessRun();
             // This key ends the word, so the next one starts afresh, and the field never showed the word to reopen.
             rawWord_ = false;
             lastWord_.clear();
@@ -690,7 +727,7 @@ namespace ngosen {
             return;
         }
         if (!deletedPart.empty()) {
-            performReplacement(oldPreBuffer_, deletedPart, addedPart);
+            performReplacement(inField, deletedPart, addedPart);
             keyEvent.accept();
         } else {
             bool wasAutoCapitalized = (currentSym != keyEvent.sym());
@@ -705,9 +742,11 @@ namespace ngosen {
         }
 
         hasHistory_ = false;
-        ResetEngine(bambooEngine_.handle());
+        // The word is in the field; the run Đoán dấu guesses goes on.
+        EngineEndWord(bambooEngine_.handle());
         oldPreBuffer_.clear();
-        rememberWord(commitStr, dropped.get());
+        // Undoing the last word alone would take the changed earlier words with it.
+        rememberWord(guess && !guess->before.empty() ? "" : commitStr, dropped.get());
     }
 
     void TypingState::rememberWord(const std::string& committed, const char* dropped) {
@@ -750,7 +789,7 @@ namespace ngosen {
             return {};
         ngosen::utf8::compareAndSplitStrings(lastWord_, dropped, deletedPart, addedPart);
         lastWord_.clear();
-        EngineRebuildFromText(bambooEngine_.handle(), dropped.c_str());
+        EngineReopenCommitted(bambooEngine_.handle(), dropped.c_str());
         hasHistory_ = true;
         return dropped;
     }
@@ -997,6 +1036,8 @@ namespace ngosen {
         if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || handleEmojiOfferKey(keyEvent) || skipsKey(keyEvent))
             return;
         settleBeforeKey();
+        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+            syncDiacritics();
         if (!keyEvent.isRelease() && !keyEvent.isModifier() && oldPreBuffer_.empty())
             noteTailAtWordStart();
         const uint32_t currentSym = trackCapitalization(keyEvent);
@@ -1738,7 +1779,7 @@ namespace ngosen {
     }
 
     bool TypingState::passesHiddenInput() {
-        const bool hidden = runsShellOnPty(host_->field()) && engine_->anyTerminalHidesInput();
+        const bool hidden = terminalHidesInput();
         if (hidden != hiddenInput_) {
             hiddenInput_        = hidden;
             hiddenInputSettled_ = false;

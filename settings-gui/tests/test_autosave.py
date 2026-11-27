@@ -90,6 +90,17 @@ class AutosaveTest(unittest.TestCase):
         self.assertEqual(fake.values["DdFreeStyle"], "True")
         self.assertEqual(fake.sub_configs["app_rules"], [{"App": "kate", "Mode": "3"}])
 
+    def test_undo_does_not_bring_back_a_notice_already_shown(self):
+        fake = FakeDBusHandler({"DdFreeStyle": "True", "LearningAnnounced": "False"})
+        window = self.open_window(fake, "Typing")
+        self.checkbox(window, DD_FREE_STYLE).click()
+        window.save_pending()
+        # fcitx5 showed that Đoán dấu learns after the save.
+        fake.values["LearningAnnounced"] = "True"
+        window.btn_undo.click()
+        self.assertEqual(fake.values["DdFreeStyle"], "True")
+        self.assertEqual(fake.values["LearningAnnounced"], "True")
+
     def test_undo_after_restoring_a_backup_keeps_what_fcitx5_remembered(self):
         path = os.path.join(self.data_home, "b.json")
         fake = FakeDBusHandler()

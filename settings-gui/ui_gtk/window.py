@@ -98,7 +98,7 @@ class Window(Adw.ApplicationWindow):
         """Builds the pages that show saved settings, as (name, title, icon, widget, searchable)."""
         self.model = SettingsModel(self.dbus)
         self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
-        self.appearance = self.convert = self.emoji = None
+        self.appearance = self.convert = self.emoji = self.guessing = None
         self.tabs = {}
         self.tab_parents = {}
         if self.model.load():
@@ -108,6 +108,9 @@ class Window(Adw.ApplicationWindow):
                 tip=random_tip(),
                 on_tip=self.show_tips,
                 show_message=self.show_check_message,
+            )
+            self.guessing = pages.GuessingPage(
+                self.model, self.save, show_message=self.show_check_message
             )
             self.appearance = AppearancePage(self.model, self.save)
             self.convert = ConvertPage(self.model, self.save, self.dbus)
@@ -129,6 +132,13 @@ class Window(Adw.ApplicationWindow):
             self.keymap = KeymapPage(keys, self.save_with_undo)
         return [
             ("typing", _("Typing"), "input-keyboard-symbolic", _widget(self.typing), True),
+            (
+                "guessing",
+                _("Word guessing"),
+                "tools-check-spelling-symbolic",
+                _widget(self.guessing),
+                True,
+            ),
             (
                 "macros",
                 _("Macros & Dictionary"),
@@ -186,7 +196,14 @@ class Window(Adw.ApplicationWindow):
         self._show(Adw.Toast(title=_("Change undone.")))
 
     def _refresh_statuses(self):
-        for page in (self.typing, self.macros, self.dictionary, self.keymap, self.emoji):
+        for page in (
+            self.typing,
+            self.guessing,
+            self.macros,
+            self.dictionary,
+            self.keymap,
+            self.emoji,
+        ):
             if page:
                 page.refresh_status()
 
@@ -427,6 +444,7 @@ class Window(Adw.ApplicationWindow):
         """Shows and focuses the row of a setting; False for a key no page shows."""
         for name, page in (
             ("typing", self.typing),
+            ("guessing", self.guessing),
             ("shortcuts", self.shortcuts),
             ("appearance", self.appearance),
             ("macros", self.macros),

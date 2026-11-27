@@ -18,7 +18,7 @@ def restore(dbus):
     model = SettingsModel(dbus)
     if not model.load():
         return False
-    for key, value in model.defaults().items():
+    for key, value in model.reset_values().items():
         if model.current.get(key) != value:
             model.set(key, value)
     ok = model.save()
@@ -42,6 +42,11 @@ def warning(model):
         "Macros, words added to the dictionary, custom keys, emoji words and what is"
         " remembered for each app are cleared too. You can undo this right after."
     )
+    kept = _(
+        "What Đoán dấu learned is kept, and so is whether it learns; Forget all on the Word"
+        " guessing page clears it."
+    )
+    cleared = f"{cleared} {kept}"
     if not model.metadata or model.toggle_is_ctrl_shift():
         return cleared
     note = _("The key that switches between Vietnamese and English goes back to Ctrl+Shift.")

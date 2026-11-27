@@ -130,6 +130,15 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(EmojiPlacement, N_("After the word"), N_("Instead of the word"));
 
+    // How sure Đoán dấu must be before it fixes a syllable typed wrong.
+    enum class FixStrength : std::uint8_t {
+        Cautious = 0,
+        Medium   = 1,
+        Strong   = 2,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(FixStrength, N_("Cautious"), N_("Medium"), N_("Strong"));
+
     enum class EmojiOfferAt : std::uint8_t {
         EachWord,
         SentenceEnd,
@@ -315,6 +324,8 @@ namespace fcitx {
         HiddenOption<bool> vietnameseOn{this, "VietnameseOn", _("Vietnamese On"), false};
         // Set once the settings were upgraded; fcitx5 leaves defaults out of the file, so nothing else tells.
         HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0};
+        // Set once the notification that Đoán dấu learns was shown.
+        HiddenOption<bool> learningAnnounced{this, "LearningAnnounced", _("Learning Announced"), false};
         // The last feature release (X.Y) whose "What's new" notification was shown.
         HiddenOption<std::string> announcedVersion{this, "AnnouncedVersion", _("Announced Version"), ""}; KeyListOption modeMenuKey{
             this, "ModeMenuKey", _("Mode Menu Hotkey"), {Key("grave")}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
@@ -344,6 +355,12 @@ namespace fcitx {
         Option<bool> retypeAfterSwitch{this, "RetypeAfterSwitch", _("Retype text typed before switching on"), ngosen::defaultOptions.retypeAfterSwitch};
         Option<bool> retoneSelection{this, "RetoneSelection", _("Change the tone of a selected word"), ngosen::defaultOptions.retoneSelection};
         Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
+        Option<bool> guessDiacritics{this, "GuessDiacritics", _("Add marks to words typed without them"), ngosen::defaultOptions.guessDiacritics};
+        Option<bool> guessFixesTypos{this, "GuessFixesTypos", _("Also fix syllables typed wrong"), ngosen::defaultOptions.guessFixesTypos};
+        OptionWithAnnotation<FixStrength, FixStrengthI18NAnnotation> guessFixStrength{this, "GuessFixStrength", _("How boldly to fix"),
+                                                                                      static_cast<FixStrength>(ngosen::defaultOptions.guessFixStrength)};
+        Option<bool> guessInTerminals{this, "GuessInTerminals", _("Guess in terminals too"), ngosen::defaultOptions.guessInTerminals};
+        Option<bool> learnDiacritics{this, "LearnDiacritics", _("Learn from what you type"), ngosen::defaultOptions.learnDiacritics};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};
         Option<bool> englishEmojiKeywords{this, "EnglishEmojiKeywords", _("English keywords"), ngosen::defaultOptions.englishEmojiKeywords};

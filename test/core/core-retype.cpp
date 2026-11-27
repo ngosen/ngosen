@@ -310,6 +310,40 @@ namespace {
         check(text == "abc tieengs a ", what + "another key leaves the offered text as typed", text);
     }
 
+    // Words typed while off with no Telex key may still take marks; Đoán dấu can be wrong, so only offer them.
+    void testRetypeGuessedMarks(Mode mode) {
+        const Field       field   = makeField("wayland", true);
+        const std::string what    = mode == Mode::Sen ? "sen: " : "preedit: ";
+        const auto        typeOff = [&](bool guess, const std::vector<uint32_t>& after) {
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics = guess;
+            return retypeInApp(resources, field, mode, "toi go phim", after);
+        };
+        std::string text = typeOff(true, {});
+        check(text == "toi go phim", what + "Đoán dấu: words typed while off are only offered marks", text);
+        text = typeOff(true, {ngosen::key::Return});
+        check(text == "tôi gõ phím", what + "Đoán dấu: Enter takes the offered marks", text);
+        text = typeOff(true, {ngosen::key::Tab});
+        check(text == "toi go phim", what + "Đoán dấu: Tab keeps the words as typed", text);
+        text = typeOff(true, {ngosen::key::Return, ngosen::key::Escape});
+        check(text == "toi go phim", what + "Đoán dấu: Esc after Enter puts the typed words back", text);
+        text = typeOff(false, {ngosen::key::Return});
+        check(text.rfind("toi go phim", 0) == 0, what + "Đoán dấu off: nothing offered", text);
+        Field konsole   = makeField("wayland", true);
+        konsole.program = "org.kde.konsole";
+        for (const bool inTerminals : {false, true}) {
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics  = true;
+            resources.mutableOptions().guessInTerminals = inTerminals;
+
+            text = retypeInApp(resources, konsole, mode, "toi go phim", {ngosen::key::Return});
+            if (inTerminals)
+                check(text == "tôi gõ phím", what + "Đoán dấu: Enter takes the offered marks in a terminal when asked to", text);
+            else
+                check(text.rfind("toi go phim", 0) == 0, what + "Đoán dấu: no marks offered in a terminal by default", text);
+        }
+    }
+
     // Types prefix and then typed in English, switches on, clicks after the prefix, then presses keys.
     // With appResets the app tells of the click only by a reset, as apps over IBus on GNOME do.
     std::string retypeAfterClick(const Field& field, const std::string& prefix, const std::string& typed, const std::vector<uint32_t>& after, bool appResets = false) {
@@ -395,6 +429,34 @@ namespace {
                 check(offer == "(no offer)", "a hidden prompt drops the English typed before it", offer);
             else
                 check(offer == "abc tieengs → abc tiếng", "without a prompt the English is offered", offer);
+        }
+    }
+
+    // Keys typed in another input method never reach passesHiddenInput, so the switch must check the prompt itself.
+    void testHiddenPromptInOtherInputMethod() {
+        for (const std::string typed : {"abc tieengs", "toi go phim"}) {
+            for (const bool hiddenWhileTyping : {true, false}) {
+                realMode = Mode::Off;
+                FakeLoop      loop;
+                FakeResources resources;
+                resources.mutableOptions().guessDiacritics = true;
+                Field field                                = makeField("wayland", true);
+                field.program                              = "kitty";
+                auto                owned                  = std::make_unique<FakeHost>(loop, field);
+                FakeHost*           host                   = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+                resources.terminalHidesInput = hiddenWhileTyping;
+                noteWhileOff(state, typed);
+                resources.terminalHidesInput = !hiddenWhileTyping;
+                state.activate(Mode::Sen, false);
+                state.offerRetype();
+                loop.pump(150);
+                const std::string offer = !host->candidates() ? "(no offer)" : (host->labels().empty() ? "(empty)" : host->labels()[0]);
+                check(offer == "(no offer)",
+                      hiddenWhileTyping ? "keys typed at a hidden prompt in another input method are not offered later: " + typed :
+                                          "text typed before a prompt is not retyped into it: " + typed,
+                      offer);
+            }
         }
     }
 
@@ -644,6 +706,8 @@ int main() {
     testRetypeInApp("wayland", true, Mode::Sen);
     testRetypeInApp("xim", false, Mode::Sen);
     testRetypeInApp("wayland", true, Mode::Preedit);
+    testRetypeGuessedMarks(Mode::Sen);
+    testRetypeGuessedMarks(Mode::Preedit);
     // Deletes through the surrounding text where forwarded keys do not work.
     testRetypeInApp("other", true, Mode::Sen);
     testRetypeOverSelection("vivaldi-bin", 73, false);
@@ -654,6 +718,7 @@ int main() {
     testClickDropsRetype("ibus", true, true);
     testClickBeforeSwitchDropsKeys();
     testHiddenPromptDropsKeys();
+    testHiddenPromptInOtherInputMethod();
     testRetypeInSteppingApp();
     testNoRetypeInGnomeSearch();
     testRetypeRightAfterSwitchKey();

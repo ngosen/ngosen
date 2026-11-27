@@ -100,11 +100,38 @@ Hoàn tác.
   Chữ đang hiện đúng phím đã gõ như `tunx` thì bấm `Ctrl` để thêm dấu thành `tũn`.
   Ở chế độ Gõ Sen, bấm tiếp thì từ đổi qua lại giữa chữ có dấu và đúng phím đã gõ: `tieengs` + `Ctrl` `Ctrl`
   ra `tieengs`. Từ tiếng Anh lỡ bị thêm dấu cũng lấy lại được như vậy.
+- **Đoán dấu:** gõ không dấu `toi di hoc` thì ra `tôi đi học`. Tắt sẵn; bật ở trang **Đoán chữ** trong
+  cửa sổ cài đặt, nơi có thêm lựa chọn sửa cả âm tiết gõ sai và mức mạnh tay khi sửa. Trong terminal và ứng
+  dụng X11 cũ qua XIM, Đoán dấu nghỉ trừ khi bật **Đoán cả trong terminal**: ở đó nó không sửa lại được
+  chữ trước nên đoán sai nhiều hơn. Đoán dấu học từ chữ bạn gõ để đoán sát cách bạn viết; xem
+  [Đoán chữ học gì](#doan-chu-hoc-gi).
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.
 
 Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md), những gì sắp làm ở [ROADMAP.md](ROADMAP.md).
+
+<a id="doan-chu-hoc-gi"></a>
+
+### Đoán chữ học gì
+
+Khi Đoán dấu bật, nó học từ chữ bạn gõ. Việc học bật sẵn; lần đầu học, Ngó Sen báo một lần bằng thông
+báo của desktop.
+
+- **Học gì:** chữ có dấu mà Ngó Sen đã đưa vào ô, gồm chữ bạn tự gõ có dấu và chữ bạn bấm Backspace để giữ
+  nguyên như đã gõ sau khi đoán sai. Không học chữ máy tự đoán, không học chữ bung ra từ gõ tắt.
+- **Lưu gì:** các cụm 1, 2 và 3 chữ liền nhau kèm số lần gặp, cả chỗ bắt đầu và kết thúc một đoạn gõ.
+  Ghép các cụm lại có thể đọc ra những câu ngắn bạn đã gõ.
+- **Khi nào:** khi một đoạn gõ kết thúc: rời ô, bấm chuột, nhấn Enter, hoặc gõ đủ 200 âm tiết. Chữ gõ rồi
+  xoá bằng Backspace vẫn có thể đã được học.
+- **Không học:** trong ô mật khẩu hay ô báo là riêng tư. Trong terminal chỉ học khi bật **Đoán cả trong
+  terminal**, và khi đó vẫn không học lúc Ngó Sen nhận ra terminal đang giấu chữ (đoán theo dấu hiệu nên
+  có thể sót). Không học ở chế độ Off, hay khi tắt Đoán dấu hoặc
+  tắt học.
+- **Lưu ở đâu:** `~/.local/share/ngosen/learned-diacritics`, dạng văn bản thường, chỉ bạn đọc được. Ghi 5
+  phút một lần khi có gì mới, và khi fcitx5 thoát. Không gửi đi đâu.
+- **Xem, quên, tắt:** trang **Đoán chữ** có nút **Xem**, nút **Quên hết** và công tắc **Học từ chữ bạn
+  gõ**. "Khôi phục mặc định" không xoá những gì đã học và giữ nguyên công tắc học.
 
 <a id="che-do-go"></a>
 
@@ -477,6 +504,9 @@ Cấu hình được giữ lại để lần cài sau dùng tiếp: các file `n
   [bamboo-core](https://github.com/BambooEngine/bamboo-core) của [@t1ld3x](https://github.com/t1ld3x)
   (giấy phép **MIT**). Mọi gói Ngó Sen, kể cả Debian 12, đều dùng bản Rust.
 - Danh sách từ tiếng Anh trong lõi lấy từ [SCOWL](https://wordlist.aspell.net) của Kevin Atkinson.
+- Bảng của Đoán dấu là số đếm cụm chữ (không chứa câu nào) do [Tim Sen](https://github.com/ngosen/timsen)
+  đếm trên Wikipedia tiếng Việt (CC BY-SA 4.0), FineWeb-2 (ODC-By 1.0) và phụ đề [OpenSubtitles](http://www.opensubtitles.org/) qua
+  [OPUS](https://opus.nlpl.eu); bảng theo giấy phép **CC BY-SA 4.0**.
 - Issue và pull request trước ngày 10/10/2026 nằm ở repo lưu trữ
   [ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
 
@@ -498,7 +528,9 @@ Ngó Sen has two typing modes, Gõ Sen (for fast typing, browsers and Electron a
 Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by [@nguyen10t2](https://github.com/nguyen10t2),
 ported from the original Go [bamboo-core](https://github.com/BambooEngine/bamboo-core) by
 [@t1ld3x](https://github.com/t1ld3x). Both projects are MIT licensed. The core's English word list comes from
-[SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
+[SCOWL](https://wordlist.aspell.net) by Kevin Atkinson. The table behind Đoán dấu holds word-sequence counts
+made by [Tim Sen](https://github.com/ngosen/timsen) from Vietnamese Wikipedia, FineWeb-2 and [OpenSubtitles](http://www.opensubtitles.org/)
+(via [OPUS](https://opus.nlpl.eu)), licensed CC BY-SA 4.0.
 
 It includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to change the tone
 mark of a selected word. A convert hotkey turns selected TCVN3 or VNI text into the chosen charset, Unicode by default.

@@ -44,6 +44,10 @@ namespace ngosen {
         virtual uintptr_t keepWords() const {
             return 0;
         }
+        // Đoán dấu's table and personal dictionary, shared by every field; 0 while it is off.
+        virtual uintptr_t diacritics() const {
+            return 0;
+        }
 
         // Shared by every field, so a saved log follows the user across windows.
         virtual Recorder& recorder() = 0;

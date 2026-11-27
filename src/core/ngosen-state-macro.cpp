@@ -21,6 +21,8 @@
 namespace ngosen {
 
     void TypingState::handleDoubleSpaceReplacement() {
+        // Đoán dấu still expects the space it saw, so its next change would not find it.
+        dropGuessRun();
         performReplacement(oldPreBuffer_, " ", ". ");
         NGOSEN_INFO("Commit: . ");
         if (engine_->options().autoCapitalizeAfterPunctuation) {

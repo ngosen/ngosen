@@ -14,6 +14,7 @@ class SettingsCategory(Enum):
     SHORTCUTS = "shortcuts"
     CONVERT = "convert"
     EMOJI = "emoji"
+    GUESSING = "guessing"
 
 
 TYPING_GROUP = N_("Typing")
@@ -22,6 +23,9 @@ MODE_SWITCHING = N_("Mode switching")
 TRAY_ICON = N_("Tray icon")
 CONVERT_CHARSETS = N_("Charsets")
 EMOJI_GROUP = N_("Emoji")
+LEARNING_GROUP = N_("Learning")
+# Restoring defaults leaves these as the user set them, since they decide what is kept about them.
+KEPT_ON_RESET = ("LearnDiacritics",)
 
 # A light and a dark panel, behind the tray icon preview.
 TRAY_PANEL = ("#e6e6e6", "#2d2d2d")
@@ -44,6 +48,9 @@ MENU_ICON_FALLBACKS = {
     "format-text-capitalize": "ngosen-auto-capitalize",
 }
 
+# A page whose title is not its category's name.
+PAGE_TITLES = {SettingsCategory.GUESSING: N_("Word guessing")}
+
 # Groups show in this order; the first checkbox of a group carries the group name.
 SETTINGS_MAP = {
     SettingsCategory.TYPING: {
@@ -64,6 +71,15 @@ SETTINGS_MAP = {
             "CapitalizeStartOfText",
             "RawWordAfterSlash",
         ],
+    },
+    SettingsCategory.GUESSING: {
+        N_("Adding marks"): [
+            "GuessDiacritics",
+            "GuessFixesTypos",
+            "GuessFixStrength",
+            "GuessInTerminals",
+        ],
+        LEARNING_GROUP: ["LearnDiacritics"],
     },
     SettingsCategory.EMOJI: {
         EMOJI_GROUP: [
@@ -169,6 +185,22 @@ HINTS = {
     "EmojiPlacement": N_(
         "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
     ),
+    "GuessDiacritics": N_(
+        "Type toi di hoc and get tôi đi học; a word can change again as the next ones come. Backspace right after a word puts it back as typed. Never in password fields."
+    ),
+    "GuessFixesTypos": N_("phmi becomes phím. Off, a syllable no word matches stays as typed."),
+    "GuessFixStrength": N_(
+        "Stronger fixes more typos, and now and then changes a word that was right. A new level"
+        " applies from the next thing you type."
+    ),
+    "GuessInTerminals": N_(
+        "A terminal does not let Ngó Sen read back what you typed, so guesses there are wrong more"
+        " often and Backspace cannot bring back what you typed."
+    ),
+    "LearnDiacritics": N_(
+        "Words you type with marks are kept on this computer so guesses fit how you write. Never"
+        " in password fields, and never sent anywhere."
+    ),
     "RawWordAfterSlash": N_(
         "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
     ),
@@ -258,6 +290,10 @@ MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
 # Settings that do nothing unless another one, shown next to them, holds this value.
 DEPENDS = {
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
+    "GuessFixesTypos": ("GuessDiacritics", "True"),
+    "GuessFixStrength": ("GuessFixesTypos", "True"),
+    "GuessInTerminals": ("GuessDiacritics", "True"),
+    "LearnDiacritics": ("GuessDiacritics", "True"),
     "IconTheme": ("TrayIconKind", ("V / E", "vi / en")),
     "TrayIconSize": ("TrayIconKind", "Colour icon"),
     "TrayImageVietnamese": ("TrayIconKind", "Custom image"),
@@ -310,4 +346,9 @@ def locked_by(key, value_of):
     value_of(name) gives a setting's value, or None when fcitx5 does not report that setting.
     """
     controller, needed = DEPENDS.get(key, (None, None))
-    return controller if controller and not _holds(controller, needed, value_of) else None
+    if controller is None:
+        return None
+    # A controller locked itself cannot be changed, so what locks it comes first.
+    return locked_by(controller, value_of) or (
+        None if _holds(controller, needed, value_of) else controller
+    )

@@ -86,6 +86,8 @@ namespace ngosen {
         void setOption(uintptr_t engine) const;
         // A new engine for this field's input method, which the caller owns.
         uintptr_t newBambooEngine() const;
+        // Gives this field's engine Đoán dấu while it is on, typing Vietnamese, in a field that shows its text.
+        void syncDiacritics();
 
         /**
          * @brief Main key event handler.
@@ -231,6 +233,8 @@ namespace ngosen {
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     hiddenInput_           = false; ///< the terminal hid input at the last key
+        uintptr_t                diacritics_            = 0;     ///< Đoán dấu handle the engine has, 0 for none
+        bool                     privateField_          = false; ///< the engine saw a field that hides its text
         bool                     hiddenInputSettled_    = true;  ///< what was open before the last change has been put down
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
@@ -340,6 +344,7 @@ namespace ngosen {
         void                     dropHintBeforeKey();
         // What typed reads as with this field's input method, or typed when it changes nothing.
         std::string        addMarks(const std::string& typed);
+        std::string        guessMarks(const std::string& typed);
         bool               everyWordTakesMarks(const std::string& typed);
         void               applyRetype();
         bool               replaceRetyped(const std::string& from, const std::string& to);
@@ -350,6 +355,7 @@ namespace ngosen {
         void               dropRetype();
         void               hideOffer();
         bool               reportsTextInTime() const;
+        bool               terminalHidesInput() const;
         bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);
@@ -1148,6 +1154,22 @@ namespace ngosen {
         bool        decomposesAtWordEnd() const;
         std::string spelledAtWordEnd(const std::string& word) const;
         void        syncEngineCharset();
+        // A key's commit as Đoán dấu changed it, with the text before it in the field that changes too.
+        struct GuessedCommit {
+            std::string before; ///< what the field shows before the commit from the first word changed; empty if only the commit changes
+            std::string text;   ///< what replaces before and the commit
+        };
+        // The changes Đoán dấu made at this key, when the field still shows before and wordInField after it.
+        std::optional<GuessedCommit> takeGuess(const std::string& commit, const std::string& wordInField);
+        bool                         fieldShowsGuessed(const std::string& before, const std::string& wordInField) const;
+        bool                         guessesHere() const;
+        void                         dropGuessRun();
+        // The word as typed when Backspace may take back the fix Đoán dấu made to the last word.
+        std::optional<std::string> takeBackFix();
+        bool                       undoFixInField(ngosen::KeyPress& keyEvent);
+        bool                       undoFixInPreedit(ngosen::KeyPress& keyEvent);
+        // Commits a word from the preedit with Đoán dấu's changes; returns the word Backspace may reopen.
+        std::string commitGuessInPreedit(const std::string& text, bool keyTaken);
         // The engine finished a word: send what differs from the text already typed.
         void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& engineCommit);
         // The field reports no text where the word stood, as after a click on another cell.

@@ -94,6 +94,63 @@ class ResetTest(unittest.TestCase):
         self.assertEqual(fake.sub_configs["app_rules"], [])
         self.assertEqual(fake.sub_configs["ngosen-macro"], [])
 
+    def test_reset_keeps_learning_as_set(self):
+        fake = FakeDBusHandler({"LearnDiacritics": "False", "GuessDiacritics": "True"})
+        window = NgoSenSettingsWindow(dbus_handler=fake)
+        with mock.patch("ui.main_window.confirm", return_value=True):
+            window.on_restore_defaults()
+        window.save_pending()
+        self.assertEqual(fake.values["LearnDiacritics"], "False")
+        self.assertEqual(fake.values["GuessDiacritics"], DEFAULTS["GuessDiacritics"])
+
+    def test_reset_leaves_nothing_unsaved(self):
+        # A page left changed would let a later save_pending() replace the Undo snapshot.
+        fake = FakeDBusHandler({"LearnDiacritics": "False"})
+        window = NgoSenSettingsWindow(dbus_handler=fake)
+        with mock.patch("ui.main_window.confirm", return_value=True):
+            window.on_restore_defaults()
+        window.save_pending()
+        self.assertEqual(window._modified_pages(), [])
+
+    def test_reset_keeps_learning_changed_after_the_pages_opened(self):
+        for before, after in (("True", "False"), ("False", "True")):
+            with self.subTest(after=after):
+                fake = FakeDBusHandler({"LearnDiacritics": before, "GuessDiacritics": "True"})
+                window = NgoSenSettingsWindow(dbus_handler=fake)
+                window._build_all_pages()
+                learn = next(
+                    p.control_for("LearnDiacritics")
+                    for p in window._pages
+                    if isinstance(p, DynamicSettingsPage) and p.control_for("LearnDiacritics")
+                )
+                learn.setChecked(after == "True")
+                window.save_pending()
+                with mock.patch("ui.main_window.confirm", return_value=True):
+                    window.on_restore_defaults()
+                window.save_pending()
+                self.assertEqual(fake.values["LearnDiacritics"], after)
+
+    def test_reset_from_the_gtk_window_keeps_learning_as_set(self):
+        from core import defaults
+
+        fake = FakeDBusHandler({"LearnDiacritics": "False", "GuessDiacritics": "True"})
+        with (
+            tempfile.TemporaryDirectory() as home,
+            mock.patch.dict(os.environ, {"XDG_DATA_HOME": home}),
+        ):
+            defaults.restore(fake)
+        self.assertEqual(fake.values["LearnDiacritics"], "False")
+        self.assertEqual(fake.values["GuessDiacritics"], DEFAULTS["GuessDiacritics"])
+
+    def test_reset_button_off_when_only_learning_differs(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler({"LearnDiacritics": "False"}))
+        app.processEvents()
+        self.assertFalse(window.btn_reset.isEnabled())
+
+    def test_reset_says_learning_is_kept(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        self.assertIn("Forget all", self.asked(window))
+
     def test_reset_button_sees_pages_not_opened(self):
         cases = {
             "macros": FakeDBusHandler(

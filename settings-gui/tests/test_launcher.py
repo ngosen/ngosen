@@ -89,6 +89,9 @@ class AfterInstallTest(unittest.TestCase):
         self.assertFalse(main.parse_args([]).after_install)
         self.assertTrue(main.parse_args(["--after-install"]).after_install)
 
+    def test_a_notification_can_open_the_guessing_page(self):
+        self.assertEqual(main.parse_args(["--page", "guessing"]).page, "guessing")
+
     def test_opening_after_install_removes_the_one_time_entry(self):
         for argv, removed in ((["--after-install"], 1), ([], 0)):
             with (

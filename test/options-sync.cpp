@@ -48,6 +48,11 @@ namespace {
         c.setValueByPath("DoubleSpaceToPeriod", "True");
         c.setValueByPath("DoubleHyphenToEmDash", "True");
         c.setValueByPath("RawWordAfterSlash", "False");
+        c.setValueByPath("GuessDiacritics", "True");
+        c.setValueByPath("GuessFixesTypos", "True");
+        c.setValueByPath("GuessFixStrength", "Strong");
+        c.setValueByPath("GuessInTerminals", "True");
+        c.setValueByPath("LearnDiacritics", "False");
         c.setValueByPath("MessengerSelectOvertype", "False");
         c.setValueByPath("CopyWaitRecovery", "False");
         c.setValueByPath("FoldReplayReplacement", "False");
@@ -87,6 +92,11 @@ namespace {
         check(step + ": DoubleSpaceToPeriod", o.doubleSpaceToPeriod == c.doubleSpaceToPeriod.value());
         check(step + ": DoubleHyphenToEmDash", o.doubleHyphenToEmDash == c.doubleHyphenToEmDash.value());
         check(step + ": RawWordAfterSlash", o.rawWordAfterSlash == c.rawWordAfterSlash.value());
+        check(step + ": GuessDiacritics", o.guessDiacritics == c.guessDiacritics.value());
+        check(step + ": GuessFixesTypos", o.guessFixesTypos == c.guessFixesTypos.value());
+        check(step + ": GuessFixStrength", o.guessFixStrength == static_cast<int>(c.guessFixStrength.value()));
+        check(step + ": GuessInTerminals", o.guessInTerminals == c.guessInTerminals.value());
+        check(step + ": LearnDiacritics", o.learnDiacritics == c.learnDiacritics.value());
         check(step + ": MessengerSelectOvertype", o.messengerSelectOvertype == c.messengerSelectOvertype.value());
         check(step + ": CopyWaitRecovery", o.copyWaitRecovery == c.copyWaitRecovery.value());
         check(step + ": FoldReplayReplacement", o.foldReplayReplacement == c.foldReplayReplacement.value());
@@ -132,6 +142,11 @@ namespace {
         check("default DoubleSpaceToPeriod", o.doubleSpaceToPeriod == d.doubleSpaceToPeriod);
         check("default DoubleHyphenToEmDash", o.doubleHyphenToEmDash == d.doubleHyphenToEmDash);
         check("default RawWordAfterSlash", o.rawWordAfterSlash == d.rawWordAfterSlash);
+        check("default GuessDiacritics", o.guessDiacritics == d.guessDiacritics);
+        check("default GuessFixesTypos", o.guessFixesTypos == d.guessFixesTypos);
+        check("default GuessFixStrength", o.guessFixStrength == d.guessFixStrength);
+        check("default GuessInTerminals", o.guessInTerminals == d.guessInTerminals);
+        check("default LearnDiacritics", o.learnDiacritics == d.learnDiacritics);
         check("default RetypeAfterSwitch", o.retypeAfterSwitch == d.retypeAfterSwitch);
         check("default RetoneSelection", o.retoneSelection == d.retoneSelection);
         check("default MessengerSelectOvertype", o.messengerSelectOvertype == d.messengerSelectOvertype);

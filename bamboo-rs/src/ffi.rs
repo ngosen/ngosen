@@ -12,14 +12,16 @@ use std::ffi::{CStr, c_char, c_int};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::os::fd::FromRawFd;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use bamboo_core::advanced::charset_names;
 use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
 
 use crate::convert::{LetterCase, convert};
-use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, WordList, input_method_by_name};
-use crate::handles::{self, Object};
+use crate::engine::{
+    BambooEngine, Dictionary, INPUT_METHOD_NAMES, Learning, WordList, input_method_by_name,
+};
+use crate::handles::{self, DiacriticsStore, Object};
 use crate::macro_table::MacroTable;
 use crate::spelling::VietnameseSpelling;
 
@@ -194,7 +196,7 @@ pub unsafe extern "C" fn EngineSetOption(engine: usize, option: *const EngineOpt
         e.auto_capitalize_macro = o.auto_capitalize_macro;
         e.spell_check_with_dicts = o.spell_check_with_dicts;
         e.teencode = o.teencode;
-        e.output_charset = charset;
+        e.set_output_charset(charset);
         e.preeditor.set_config(config);
         e.time_format = time_format;
         e.date_format = date_format;
@@ -272,6 +274,18 @@ pub unsafe extern "C" fn EngineRebuildFromText(engine: usize, text: *const c_cha
     // SAFETY: the caller passes a valid C string or null.
     let text = unsafe { string_from_c(text) };
     handles::with_engine(engine, |e| e.rebuild_from_text(&text));
+}
+
+/// `EngineRebuildFromText` with text of the last commit, taken back to type on: Đoán dấu never
+/// learns a macro's text, even typed on.
+///
+/// # Safety
+/// `text` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn EngineReopenCommitted(engine: usize, text: *const c_char) {
+    // SAFETY: the caller passes a valid C string or null.
+    let text = unsafe { string_from_c(text) };
+    handles::with_engine(engine, |e| e.reopen_committed(&text));
 }
 
 /// Converts `text` between two charsets named as in GetCharsetNames. `letter_case` is 0 to keep,
@@ -371,6 +385,208 @@ pub extern "C" fn EngineSetKeepGuard(engine: usize, list: usize) {
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineSetDropKeptTail(engine: usize, on: u8) {
     handles::with_engine(engine, |e| e.drop_kept_tail = on != 0);
+}
+
+/// The changes Đoán dấu made since the last call, as one replacement: the byte length of the old
+/// text, a tab, the old text and the new one. Once the last commit is in the field, the field ends
+/// with the old text and should end with the new one. Empty when nothing changed. The front end
+/// applies it before it forwards the key.
+#[unsafe(no_mangle)]
+pub extern "C" fn EnginePullChanges(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| c_string(&e.pull_changes_text()))
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// Opens the shipped table at `table` and the personal dictionary kept in `dictionary`, for every
+/// field to share. Returns 0 when the table does not load. A dictionary file that does not load
+/// leaves it empty and never written over; `DiacriticsProblem` says why.
+///
+/// # Safety
+/// Each pointer is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn DiacriticsOpen(table: *const c_char, dictionary: *const c_char) -> usize {
+    // SAFETY: the caller passes valid C strings or null.
+    let (table, dictionary) = unsafe { (string_from_c(table), string_from_c(dictionary)) };
+    let Ok(table) = timsen::Table::open(&table) else {
+        return 0;
+    };
+    let path = std::path::PathBuf::from(dictionary);
+    let dictionary = timsen::Dictionary::open(Arc::new(table), &path);
+    handles::new_handle(Object::Diacritics(Arc::new(DiacriticsStore {
+        dictionary: Arc::new(Mutex::new(dictionary)),
+        path,
+        // Nothing is learned until the front end says the user wants it.
+        learning: Arc::new(Learning::new(false)),
+        saving: Mutex::default(),
+    })))
+}
+
+/// Turns learning on or off in every field; a run open while it changes learns nothing.
+#[unsafe(no_mangle)]
+pub extern "C" fn DiacriticsSetLearning(handle: usize, on: u8) {
+    if let Some(store) = handles::diacritics(handle) {
+        store.learning.set(on != 0);
+    }
+}
+
+/// Why the personal dictionary file did not load; null when it did.
+#[unsafe(no_mangle)]
+pub extern "C" fn DiacriticsProblem(handle: usize) -> *mut c_char {
+    let store = handles::diacritics(handle);
+    let dictionary = store.as_deref().map(|s| lock_dictionary(&s.dictionary));
+    match dictionary.as_ref().and_then(|d| d.problem()) {
+        Some(problem) => c_string(&problem.to_string()),
+        None => std::ptr::null_mut(),
+    }
+}
+
+fn lock_dictionary(d: &Mutex<timsen::Dictionary>) -> std::sync::MutexGuard<'_, timsen::Dictionary> {
+    d.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Saves what the personal dictionary learned since the last save, writing on another thread so
+/// typing never waits for the disk; with `wait`, as at exit, returns once everything learned is
+/// written, a save already running included. Returns whether there was anything to save.
+#[unsafe(no_mangle)]
+pub extern "C" fn DiacriticsSave(handle: usize, wait: u8) -> u8 {
+    handles::diacritics(handle).is_some_and(|store| save_diacritics(&store, wait != 0)) as u8
+}
+
+pub(crate) fn save_diacritics(store: &DiacriticsStore, wait: bool) -> bool {
+    let mut saving = store.saving.lock().unwrap_or_else(|e| e.into_inner());
+    if wait && let Some(running) = saving.take() {
+        let _ = running.join();
+    }
+    let Some(job) = lock_dictionary(&store.dictionary).begin_save() else {
+        return false;
+    };
+    let dictionary = Arc::clone(&store.dictionary);
+    let save = std::thread::spawn(move || {
+        let written = job.write();
+        // A failed save leaves the dictionary owing one, so the next save tries again.
+        let Ok(Some(sync)) = lock_dictionary(&dictionary).finish_save(job, written) else {
+            return;
+        };
+        // The directory sync is slow on a busy disk, so it runs without holding the dictionary,
+        // which every typed word needs.
+        let synced = sync.sync();
+        let _ = lock_dictionary(&dictionary).finish_sync(sync, synced);
+    });
+    if wait {
+        let _ = save.join();
+    } else {
+        *saving = Some(save);
+    }
+    true
+}
+
+/// Saves what was learned and returns once it is on the disk, for the settings window to read the
+/// file. Returns null and sets `written` to whether anything was new, or returns why it failed.
+///
+/// # Safety
+/// `written` points to a writable byte.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn DiacriticsSaveNow(handle: usize, written: *mut u8) -> *mut c_char {
+    let saved = match handles::diacritics(handle) {
+        Some(store) => store.save_now(timsen::SyncJob::sync),
+        None => Ok(crate::learned::Saved::Unchanged),
+    };
+    match saved {
+        Ok(saved) => {
+            // SAFETY: the caller passes a writable byte.
+            unsafe { *written = u8::from(saved == crate::learned::Saved::Written) };
+            std::ptr::null_mut()
+        }
+        Err(e) => c_string(&e),
+    }
+}
+
+/// Forgets everything learned, in every field and in the file. Returns null, or why it failed.
+#[unsafe(no_mangle)]
+pub extern "C" fn DiacriticsForget(handle: usize) -> *mut c_char {
+    match handles::diacritics(handle).map(|store| store.forget(timsen::SyncJob::sync)) {
+        Some(Ok(())) => std::ptr::null_mut(),
+        Some(Err(e)) => c_string(&e),
+        None => c_string("no Đoán dấu is open"),
+    }
+}
+
+/// Forgets the dictionary kept in `path` while no Đoán dấu has it open. Returns null, or why it
+/// failed.
+///
+/// # Safety
+/// `path` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn DiacriticsRemoveFiles(path: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a valid C string or null.
+    let path = unsafe { string_from_c(path) };
+    match crate::learned::remove_files(std::path::Path::new(&path)) {
+        Ok(()) => std::ptr::null_mut(),
+        Err(e) => c_string(&e.to_string()),
+    }
+}
+
+/// Gives the engine Đoán dấu with the dictionary of `DiacriticsOpen`, or with 0 takes it away,
+/// as when the user switches to English.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetDiacritics(engine: usize, handle: usize) {
+    let store = handles::diacritics(handle);
+    handles::with_engine(engine, |e| match store {
+        Some(store) => e.set_diacritics(Arc::clone(&store.dictionary), Arc::clone(&store.learning)),
+        None => e.remove_diacritics(),
+    });
+}
+
+/// A password or other private field: nothing typed there is guessed or learned.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetPrivate(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_private(on != 0));
+}
+
+/// Whether Đoán dấu may change words before the one that just ended: only where the front end
+/// can check them in the field before replacing them.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetWholeRun(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_whole_run(on != 0));
+}
+
+/// Ends the word just committed but not the run Đoán dấu is guessing, for a front end that types
+/// each word into the field itself and resets the engine after it.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineEndWord(engine: usize) {
+    handles::with_engine(engine, BambooEngine::end_word);
+}
+
+/// The margin Đoán dấu fixes syllables nothing knows by in runs started from now: 4, 3 or 2 from
+/// cautious to strong, or 0 for no fixing.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetFixing(engine: usize, margin: u8) {
+    let margin = (margin != 0).then(|| f64::from(margin));
+    handles::with_engine(engine, |e| e.set_fixing(margin));
+}
+
+/// For Backspace right after the key that committed a fixed word: the text the field shows from
+/// that word to the cursor, for the front end to check and delete, the word now reopened as
+/// typed; null when there is no fix to take back.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineUndoFix(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| e.undo_fix().map(|w| c_string(&w)))
+        .flatten()
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// For Cứu chữ: `text`, typed without marks, with the marks Đoán dấu gives it, in the output
+/// charset; null without Đoán dấu, in a private field, or when no word changes.
+///
+/// # Safety
+/// `text` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn EngineRestoreText(engine: usize, text: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a valid C string or null.
+    let text = unsafe { string_from_c(text) };
+    handles::with_engine(engine, |e| e.restore_text(&text).map(|t| c_string(&t)))
+        .flatten()
+        .unwrap_or(std::ptr::null_mut())
 }
 
 /// The word as shown before the last key split it or dropped its tail; empty otherwise.

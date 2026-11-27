@@ -1917,3 +1917,1079 @@ fn test_tone_key_after_undone_mark_adds_one_letter() {
         );
     }
 }
+
+fn learning_on() -> Arc<Learning> {
+    Arc::new(Learning::new(true))
+}
+
+fn shared_dictionary() -> Arc<std::sync::Mutex<timsen::Dictionary>> {
+    let table = timsen::Table::from_bytes(include_bytes!("tiny.timsen").to_vec()).unwrap();
+    Arc::new(std::sync::Mutex::new(timsen::Dictionary::new(Arc::new(
+        table,
+    ))))
+}
+
+/// What the front end does with the changes: each counted back from the cursor, and only where
+/// the old text still stands.
+fn apply_changes(changes: Vec<FieldChange>, field: &mut [String]) {
+    for FieldChange { change, after } in changes {
+        let end = field.len() - after;
+        let first = end - change.old.len();
+        assert_eq!(field[first..end], change.old, "{change:?}");
+        field[first..end].clone_from_slice(&change.new);
+    }
+}
+
+fn commit_into(e: &mut BambooEngine, field: &mut Vec<String>) {
+    let committed = e.pull_commit();
+    field.extend(
+        diacritics::words_of(&committed)
+            .into_iter()
+            .map(str::to_string),
+    );
+}
+
+/// Types each word and the key after it, applying the changes after each.
+fn type_into(e: &mut BambooEngine, field: &mut Vec<String>, words: &[(&str, char)]) {
+    for &(keys, after) in words {
+        type_keys(e, keys);
+        e.process_key_event(after as u32, 0);
+        commit_into(e, field);
+        apply_changes(e.pull_changes(), field);
+    }
+}
+
+fn engine_on(dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>) -> BambooEngine {
+    let mut e = new_test_engine(&[], false);
+    e.set_diacritics(Arc::clone(dictionary), learning_on());
+    e
+}
+
+#[test]
+fn word_ends_restore_the_run_through_timsen() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phim", ' ')],
+    );
+    assert_eq!(field, ["tôi", "gõ", "phím"]);
+}
+
+#[test]
+fn a_syllable_nothing_knows_reaches_the_field_fixed() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    assert_eq!(field, ["tôi", "gõ", "phím"]);
+}
+
+/// Backspace right after a commit, as the front end handles it: the field loses the text the
+/// engine names, which holds the last word, and the engine shows the word as typed.
+fn undo_with_backspace(e: &mut BambooEngine, field: &mut Vec<String>) -> bool {
+    let Some(shown) = e.undo_fix() else {
+        return false;
+    };
+    assert_eq!(diacritics::words_of(&shown), [field.pop().unwrap()]);
+    true
+}
+
+/// Space after the reopened word, applying the changes.
+fn commit_reopened(e: &mut BambooEngine, field: &mut Vec<String>) {
+    e.process_key_event(KEY_SPACE, 0);
+    commit_into(e, field);
+    apply_changes(e.pull_changes(), field);
+}
+
+#[test]
+fn backspace_right_after_a_fix_reopens_the_word_as_typed() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    assert_eq!(field, ["tôi", "gõ", "phím"]);
+    assert!(undo_with_backspace(&mut e, &mut field));
+    assert_eq!(e.get_preedit_string(), "phmi");
+    commit_reopened(&mut e, &mut field);
+    assert_eq!(
+        field,
+        ["tôi", "gõ", "phmi"],
+        "committed again, it stays as typed"
+    );
+    type_into(&mut e, &mut field, &[("rat", '.')]);
+    assert_eq!(field[2], "phmi");
+    let mut again = Vec::new();
+    type_into(
+        &mut e,
+        &mut again,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    assert_eq!(again[2], "phmi", "learned as typed, so not fixed again");
+}
+
+#[test]
+fn backspace_after_the_punctuation_that_ended_the_run_reopens_the_word() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", '.')],
+    );
+    assert_eq!(field, ["tôi", "gõ", "phím"]);
+    assert!(undo_with_backspace(&mut e, &mut field));
+    commit_reopened(&mut e, &mut field);
+    assert_eq!(field, ["tôi", "gõ", "phmi"]);
+    assert_eq!(
+        e.diacritics.as_ref().unwrap().run_len(),
+        3,
+        "the run goes on"
+    );
+    type_into(&mut e, &mut field, &[("rat", '.')]);
+    let mut again = Vec::new();
+    type_into(
+        &mut e,
+        &mut again,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    assert_eq!(again[2], "phmi");
+}
+
+#[test]
+fn a_reopened_word_typed_again_differently_is_guessed_afresh() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    assert!(undo_with_backspace(&mut e, &mut field));
+    e.process_key_event(KEY_BACKSPACE, 0);
+    commit_reopened(&mut e, &mut field);
+    assert_eq!(
+        field,
+        ["tôi", "gõ", "phím"],
+        "phm is another typo, fixed in turn"
+    );
+}
+
+#[test]
+fn only_the_key_right_after_the_fix_undoes_it() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    assert!(e.undo_fix().is_none(), "nothing typed");
+    type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' ')]);
+    assert!(e.undo_fix().is_none(), "nothing fixed");
+    type_into(&mut e, &mut field, &[("phmi", ' '), ("rat", ' ')]);
+    assert!(e.undo_fix().is_none(), "a word came after the fix");
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    e.process_key_event(0xff50, 0); // Home, which the app moves the cursor with
+    assert!(e.undo_fix().is_none(), "a key came after the fix");
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' '), ("", ' ')],
+    );
+    assert!(e.undo_fix().is_none(), "a second space came after the fix");
+    type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' ')]);
+    type_keys(&mut e, "phmi");
+    e.process_key_event(0xff50, 0);
+    commit_into(&mut e, &mut field);
+    apply_changes(e.pull_changes(), &mut field);
+    assert_eq!(field.last().map(String::as_str), Some("phím"));
+    assert!(
+        e.undo_fix().is_none(),
+        "the key that fixed it went to the app"
+    );
+    type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' ')]);
+    type_keys(&mut e, "phmi");
+    e.process_key_event(KEY_TAB, 0);
+    commit_into(&mut e, &mut field);
+    apply_changes(e.pull_changes(), &mut field);
+    assert_eq!(field.last().map(String::as_str), Some("phím"));
+    assert!(
+        e.undo_fix().is_none(),
+        "Tab, which the app gets, came after it"
+    );
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    type_keys(&mut e, "r");
+    assert!(e.undo_fix().is_none(), "a letter came after the fix");
+    e.reset();
+    e.macro_enabled = true;
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' '), ("", ' ')],
+    );
+    assert!(
+        e.undo_fix().is_none(),
+        "a second space, which macros let the engine take"
+    );
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    e.reset();
+    assert!(e.undo_fix().is_none(), "the cursor moved");
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    assert!(e.undo_fix().is_some());
+    assert!(e.undo_fix().is_none(), "one fix, undone once");
+}
+
+#[test]
+fn an_undo_names_the_text_to_delete() {
+    for (after, text) in [(' ', "phím "), ('.', "phím.")] {
+        let mut e = engine_on(&shared_dictionary());
+        let mut field = Vec::new();
+        type_into(
+            &mut e,
+            &mut field,
+            &[("toi", ' '), ("go", ' '), ("phmi", after)],
+        );
+        assert_eq!(e.undo_fix().as_deref(), Some(text));
+    }
+    let mut e = engine_on(&shared_dictionary());
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("tgp", "toi go phmi")]);
+    let mut field = Vec::new();
+    type_keys(&mut e, "tgp");
+    e.process_key_event(KEY_TAB, 0);
+    commit_into(&mut e, &mut field);
+    apply_changes(e.pull_changes(), &mut field);
+    assert_eq!(field, ["tôi", "gõ", "phím"]);
+    assert_eq!(
+        e.undo_fix().as_deref(),
+        Some("phím"),
+        "Tab adds nothing after it"
+    );
+}
+
+#[test]
+fn a_fix_not_applied_yet_is_not_undone() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' ')]);
+    type_keys(&mut e, "phmi");
+    e.process_key_event(KEY_SPACE, 0);
+    commit_into(&mut e, &mut field);
+    assert!(e.undo_fix().is_none(), "the field still shows phmi");
+    apply_changes(e.pull_changes(), &mut field);
+    assert_eq!(
+        field,
+        ["tôi", "gõ", "phím"],
+        "the fix is still there to apply"
+    );
+}
+
+#[test]
+fn an_undo_names_the_text_in_the_charset_of_the_field() {
+    let mut e = engine_on(&shared_dictionary());
+    e.output_charset = "VIQR".to_string();
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    let text = e.undo_fix().unwrap();
+    assert_ne!(text, "phím ");
+    assert_eq!(text, encode("VIQR", "phím "));
+}
+
+#[test]
+fn a_word_taken_back_from_the_field_ends_the_run() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    e.rebuild_from_text("ngo");
+    assert!(e.undo_fix().is_none(), "the field changed under the fix");
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 0);
+}
+
+#[test]
+fn a_tone_removed_from_the_word_being_typed_keeps_the_run() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("toi", ' ')]);
+    type_keys(&mut e, "gox");
+    e.rebuild_from_text("go");
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 1);
+}
+
+#[test]
+fn backspace_the_app_gets_ends_the_run() {
+    let mut e = engine_on(&shared_dictionary());
+    // With macros on, the engine takes Backspace itself rather than passing it on unseen.
+    e.macro_enabled = true;
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' ')]);
+    assert!(
+        !e.process_key_event(KEY_BACKSPACE, 0),
+        "the app deletes the space"
+    );
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 0);
+}
+
+/// What the front end does with a key's commit and changes: the field must end with the old text,
+/// which then makes way for the new.
+fn commit_text_into(e: &mut BambooEngine, field: &mut String) {
+    field.push_str(&e.pull_commit());
+    if let Some((old, new)) = e.pull_field_change() {
+        assert!(field.ends_with(&old), "{field:?} does not end with {old:?}");
+        field.truncate(field.len() - old.len());
+        field.push_str(&new);
+    }
+}
+
+fn type_text(e: &mut BambooEngine, field: &mut String, words: &[(&str, char)]) {
+    for &(keys, after) in words {
+        type_keys(e, keys);
+        e.process_key_event(after as u32, 0);
+        commit_text_into(e, field);
+    }
+}
+
+#[test]
+fn changes_as_text_reach_the_words_pull_changes_reaches() {
+    let typed: &[&[(&str, char)]] = &[
+        &[("toi", ' '), ("go", ' '), ("phmi", '.')],
+        &[("ban", ' '), ("thich", ' '), ("go", '.')],
+        &[("toi", ' '), ("go", ' '), ("phim", ' ')],
+    ];
+    for &words in typed {
+        let (mut e, mut twin) = (
+            engine_on(&shared_dictionary()),
+            engine_on(&shared_dictionary()),
+        );
+        let (mut text, mut field) = (String::new(), Vec::new());
+        type_text(&mut e, &mut text, words);
+        type_into(&mut twin, &mut field, words);
+        assert_eq!(owned_words(&text), field, "{words:?}");
+    }
+}
+
+#[test]
+fn changes_as_text_are_in_the_charset_of_the_field() {
+    let words = [("toi", ' '), ("go", ' '), ("phmi", '.')];
+    let (mut e, mut twin) = (
+        engine_on(&shared_dictionary()),
+        engine_on(&shared_dictionary()),
+    );
+    e.output_charset = "VIQR".to_string();
+    let (mut viqr, mut text) = (String::new(), String::new());
+    type_text(&mut e, &mut viqr, &words);
+    type_text(&mut twin, &mut text, &words);
+    assert_eq!(viqr, encode("VIQR", &text));
+    assert_ne!(viqr, text);
+}
+
+#[test]
+fn a_change_as_text_keeps_what_lies_between_the_words() {
+    let mut d = Diacritics::new(shared_dictionary(), learning_on());
+    let mut field = "ban  thich go. ".to_string();
+    d.committed(&field, "", true);
+    let (old, new) = d.pull_field_change().unwrap();
+    assert!(field.ends_with(&old));
+    field.truncate(field.len() - old.len());
+    field.push_str(&new);
+    assert_eq!(field, "bạn  thích gỗ. ");
+}
+
+#[test]
+fn a_change_after_the_cap_still_finds_its_text() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = String::new();
+    type_text(&mut e, &mut field, &vec![("ta", ' '); timsen::MAX_RUN + 1]);
+    type_text(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phim", '.')],
+    );
+    assert!(field.ends_with("ta tôi gõ phím."), "{field:?}");
+}
+
+#[test]
+fn guessed_words_follow_the_tone_placement_setting() {
+    for (style, shown) in [
+        (ToneStyle::Modern, "hòa bình"),
+        (ToneStyle::Traditional, "hoà bình"),
+    ] {
+        let mut e = engine_on(&shared_dictionary());
+        let config = Config::builder()
+            .free_tone_marking(true)
+            .tone_style(style)
+            .auto_correct(false)
+            .w2u_mode(W2uMode::Everywhere)
+            .build();
+        e.preeditor.set_config(config);
+        let mut field = String::new();
+        type_text(&mut e, &mut field, &[("hoa", ' '), ("binh", '.')]);
+        assert!(field.starts_with(shown), "{style:?}: {field:?}");
+    }
+}
+
+#[test]
+fn only_the_word_that_ended_changes_without_the_whole_run() {
+    for (whole, shown) in [(true, "bàn phím."), (false, "bạn phím.")] {
+        let mut e = engine_on(&shared_dictionary());
+        e.set_whole_run(whole);
+        let mut field = String::new();
+        type_text(&mut e, &mut field, &[("ban", ' '), ("phim", '.')]);
+        assert_eq!(field, shown, "whole run {whole}");
+    }
+}
+
+#[test]
+fn removing_diacritics_learns_the_run_and_guesses_nothing_after() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = String::new();
+    type_text(&mut e, &mut field, &[("ngos", ' '), ("sen", ' ')]);
+    e.remove_diacritics();
+    assert!(!dictionary.lock().unwrap().is_empty(), "the run ended");
+    type_text(&mut e, &mut field, &[("toi", ' '), ("go", '.')]);
+    assert_eq!(field, "ngó sen toi go.");
+}
+
+#[test]
+fn the_first_fix_after_a_sentence_can_be_undone() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("ta", '.'), ("ngo", ' ')]);
+    assert_eq!(field.last().map(String::as_str), Some("gõ"));
+    assert!(e.undo_fix().is_some());
+}
+
+#[test]
+fn a_charset_change_ends_the_run_kept_in_the_old_one() {
+    let mut e = engine_on(&shared_dictionary());
+    e.output_charset = "VIQR".to_string();
+    let mut field = String::new();
+    type_text(&mut e, &mut field, &[("ban", ' ')]);
+    e.set_output_charset("Unicode".to_string());
+    type_text(&mut e, &mut field, &[("phim", '.')]);
+    assert_eq!(field, format!("{}phím.", encode("VIQR", "bạn ")));
+}
+
+#[test]
+fn changes_as_text_hold_a_tab_a_macro_committed() {
+    let mut e = engine_on(&shared_dictionary());
+    e.diacritics
+        .as_mut()
+        .unwrap()
+        .committed("toi\tgo. ", "", true);
+    let text = e.pull_changes_text();
+    let (length, rest) = text.split_once('\t').unwrap();
+    let (old, new) = rest.split_at(length.parse().unwrap());
+    assert_eq!((old, new), ("toi\tgo. ", "tôi\tgỗ. "));
+}
+
+#[test]
+fn ending_a_word_keeps_the_run_that_a_reset_ends() {
+    for end_word in [true, false] {
+        let mut e = engine_on(&shared_dictionary());
+        let mut field = String::new();
+        for (keys, after) in [("toi", ' '), ("go", ' '), ("phmi", ' ')] {
+            type_text(&mut e, &mut field, &[(keys, after)]);
+            if end_word {
+                e.end_word();
+            } else {
+                e.reset();
+            }
+        }
+        let run = e.diacritics.as_ref().unwrap().run_len();
+        assert_eq!(run, if end_word { 3 } else { 0 });
+        assert_eq!(e.undo_fix().is_some(), end_word);
+    }
+}
+
+#[test]
+fn a_private_field_undoes_nothing() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    e.set_private(true);
+    assert!(e.undo_fix().is_none());
+}
+
+#[test]
+fn fixing_switched_off_leaves_the_typo_from_the_next_run() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' ')]);
+    e.set_fixing(None);
+    type_into(&mut e, &mut field, &[("phmi", '.')]);
+    assert_eq!(field[2], "phím", "the run already open still fixes");
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+    );
+    assert_eq!(field[5], "phmi");
+}
+
+#[test]
+fn each_fixing_margin_fixes_only_what_wins_by_it() {
+    // bna wins by between 3 and 4, bihn by between 2 and 3.
+    for (margin, fixed) in [
+        (Some(4.0), ["bna", "bihn"]),
+        (Some(3.0), ["bạn", "bihn"]),
+        (Some(2.0), ["bạn", "bình"]),
+        (None, ["bna", "bihn"]),
+    ] {
+        for (typo, fixed) in ["bna", "bihn"].into_iter().zip(fixed) {
+            let mut e = engine_on(&shared_dictionary());
+            e.set_fixing(margin);
+            let mut field = Vec::new();
+            type_into(
+                &mut e,
+                &mut field,
+                &[("toi", ' '), ("go", ' '), (typo, '.')],
+            );
+            assert_eq!(field[2], fixed, "{typo} at {margin:?}");
+        }
+    }
+}
+
+#[test]
+fn fixing_switched_off_holds_past_the_cap() {
+    for on in [true, false] {
+        let mut e = engine_on(&shared_dictionary());
+        let mut field = Vec::new();
+        type_into(&mut e, &mut field, &vec![("ta", ' '); timsen::MAX_RUN]);
+        e.set_fixing(on.then_some(timsen::FIX_MARGIN));
+        type_into(
+            &mut e,
+            &mut field,
+            &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+        );
+        let fixed = if on { "phím" } else { "phmi" };
+        assert_eq!(
+            field[timsen::MAX_RUN + 2],
+            fixed,
+            "the run after the cap, fixing {on}"
+        );
+    }
+}
+
+#[test]
+fn changes_pulled_late_still_find_their_words() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    for keys in ["toi", "go", "phim"] {
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        commit_into(&mut e, &mut field);
+    }
+    apply_changes(e.pull_changes(), &mut field);
+    assert_eq!(field, ["tôi", "gõ", "phím"]);
+}
+
+#[test]
+fn punctuation_ends_the_run_and_learns_only_words_typed_with_marks() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phim", '.')],
+    );
+    assert_eq!(field, ["tôi", "gõ", "phím"]);
+    assert!(
+        dictionary.lock().unwrap().is_empty(),
+        "guessed words are not learned"
+    );
+    type_into(&mut e, &mut field, &[("ngos", ' '), ("sen", ' ')]);
+    assert!(
+        dictionary.lock().unwrap().is_empty(),
+        "nothing learned before the run ends"
+    );
+    type_into(&mut e, &mut field, &[("toi", '.')]);
+    assert!(!dictionary.lock().unwrap().is_empty());
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 0);
+}
+
+#[test]
+fn enter_and_a_forwarded_symbol_end_the_run() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    type_into(&mut e, &mut Vec::new(), &[("ngos", ' ')]);
+    type_keys(&mut e, "sen");
+    e.process_key_event(KEY_RETURN, 0);
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 0);
+    assert!(!dictionary.lock().unwrap().is_empty());
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    type_into(&mut e, &mut Vec::new(), &[("ngos", ' '), ("sen", ' ')]);
+    e.process_key_event('.' as u32, 0);
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 0);
+    assert!(!dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_reset_ends_the_run_without_changing_the_field() {
+    let mut ended = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(
+        &mut ended,
+        &mut field,
+        &[("ban", ' '), ("thich", ' '), ("go", '.')],
+    );
+    let mut e = engine_on(&shared_dictionary());
+    let mut open = Vec::new();
+    type_into(
+        &mut e,
+        &mut open,
+        &[("ban", ' '), ("thich", ' '), ("go", ' ')],
+    );
+    assert_ne!(field, open, "ending the run would change the field");
+    e.reset();
+    assert!(e.pull_changes().is_empty());
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 0);
+}
+
+#[test]
+fn a_private_field_never_reaches_timsen() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("ngos", ' '), ("sen", ' ')]);
+    e.set_private(true);
+    type_into(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phim", '.')],
+    );
+    assert_eq!(field, ["ngó", "sen", "toi", "go", "phim"]);
+    assert!(
+        dictionary.lock().unwrap().is_empty(),
+        "what waited was dropped"
+    );
+    e.set_private(false);
+    type_into(&mut e, &mut field, &[("go", ' ')]);
+    assert_eq!(field[5], "go", "a field once private stays off");
+}
+
+#[test]
+fn a_word_half_typed_in_a_private_field_is_never_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    type_keys(&mut e, "ngos");
+    e.set_private(true);
+    e.set_private(false);
+    type_into(&mut e, &mut Vec::new(), &[("", ' '), ("sen", '.')]);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn what_one_field_learns_the_next_run_in_another_restores() {
+    let dictionary = shared_dictionary();
+    let (mut first, mut second) = (engine_on(&dictionary), engine_on(&dictionary));
+    let mut field = Vec::new();
+    type_into(&mut second, &mut field, &[("ngo", ' '), ("sen", '.')]);
+    // The table lacks ngo, one edit from go, so it is fixed until the dictionary learns ngó.
+    assert_eq!(field, ["gõ", "sen"], "the table alone does not restore it");
+    type_into(&mut first, &mut Vec::new(), &[("ngos", ' '), ("sen", '.')]);
+    field.clear();
+    type_into(&mut second, &mut field, &[("ngo", ' '), ("sen", '.')]);
+    assert_eq!(field, ["ngó", "sen"]);
+}
+
+fn engine_learning(
+    dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>,
+    learning: &Arc<Learning>,
+) -> BambooEngine {
+    let mut e = new_test_engine(&[], false);
+    e.set_diacritics(Arc::clone(dictionary), Arc::clone(learning));
+    e
+}
+
+#[test]
+fn nothing_is_learned_while_learning_is_off() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_learning(&dictionary, &Arc::new(Learning::new(false)));
+    type_into(&mut e, &mut Vec::new(), &[("ngos", ' '), ("sen", '.')]);
+    e.reset();
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_run_open_when_learning_is_turned_off_is_never_learned() {
+    for back_on in [false, true] {
+        let dictionary = shared_dictionary();
+        let learning = Arc::new(Learning::new(true));
+        let mut e = engine_learning(&dictionary, &learning);
+        type_into(&mut e, &mut Vec::new(), &[("ngos", ' ')]);
+        learning.set(false);
+        if back_on {
+            learning.set(true);
+        }
+        type_into(&mut e, &mut Vec::new(), &[("sen", '.')]);
+        assert!(dictionary.lock().unwrap().is_empty(), "back on: {back_on}");
+        // The next run starts after the change and learns again.
+        learning.set(true);
+        type_into(&mut e, &mut Vec::new(), &[("ngos", ' '), ("sen", '.')]);
+        assert!(!dictionary.lock().unwrap().is_empty(), "back on: {back_on}");
+    }
+}
+
+#[test]
+fn a_full_run_typed_while_learning_was_off_is_never_learned() {
+    let dictionary = shared_dictionary();
+    let learning = Arc::new(Learning::new(true));
+    let mut e = engine_learning(&dictionary, &learning);
+    type_into(&mut e, &mut Vec::new(), &[("ngos", ' ')]);
+    learning.set(false);
+    // Past the cap the run goes on as a new one, started while learning was off.
+    let words = vec![("ngos", ' '); timsen::MAX_RUN + 5];
+    type_into(&mut e, &mut Vec::new(), &words);
+    learning.set(true);
+    type_into(&mut e, &mut Vec::new(), &[("sen", '.')]);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_macro_is_never_learned_whichever_key_expands_it() {
+    for key in [KEY_SPACE, '.' as u32, KEY_TAB, KEY_RETURN] {
+        let dictionary = shared_dictionary();
+        let mut e = engine_on(&dictionary);
+        e.macro_enabled = true;
+        e.macro_table = macro_table(&[("nsen", "ngó sen")]);
+        type_keys(&mut e, "nsen");
+        e.process_key_event(key, 0);
+        assert!(e.pull_commit().starts_with("ngó sen"), "{key}");
+        e.reset();
+        assert!(dictionary.lock().unwrap().is_empty(), "{key}");
+    }
+}
+
+/// Commits `keys` ended by `end`, then does what the front end does on Backspace right after: the
+/// app deletes the last character, and the word before the cursor, `taken`, is taken back to type
+/// on. It is ended by '.'.
+fn take_back_and_end(e: &mut BambooEngine, keys: &str, end: u32, taken: &str) {
+    type_keys(e, keys);
+    e.process_key_event(end, 0);
+    e.pull_commit();
+    assert!(!e.process_key_event(KEY_BACKSPACE, 0));
+    e.reopen_committed(taken);
+    e.process_key_event('.' as u32, 0);
+    e.reset();
+}
+
+#[test]
+fn a_macro_word_taken_back_by_backspace_is_never_learned() {
+    // A Space or Tab after the word is deleted; with none, its last letter is.
+    for (expansion, end, taken) in [
+        ("ngó", KEY_SPACE, "ngó"),
+        ("ngó1", KEY_SPACE, "ngó1"),
+        ("ngón", KEY_TAB, "ngó"),
+    ] {
+        let dictionary = shared_dictionary();
+        let mut e = engine_on(&dictionary);
+        e.macro_enabled = true;
+        e.macro_table = macro_table(&[("nsen", expansion)]);
+        take_back_and_end(&mut e, "nsen", end, taken);
+        assert!(dictionary.lock().unwrap().is_empty(), "{expansion}");
+    }
+}
+
+#[test]
+fn a_letter_taken_back_after_a_macro_is_still_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("nsen", "ngó thư")]);
+    type_keys(&mut e, "nsen");
+    e.process_key_event(KEY_SPACE, 0);
+    e.pull_commit();
+    // A new cell shows the letter whose key went to the app before the field.
+    e.reset();
+    e.rebuild_from_text("n");
+    type_keys(&mut e, "gos");
+    e.process_key_event('.' as u32, 0);
+    e.reset();
+    assert!(!dictionary.lock().unwrap().is_empty());
+}
+
+/// A macro's word fixed and the fix undone, as the engine does when the key after it is Backspace.
+fn undone_macro_word(dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>) -> Diacritics {
+    let mut d = Diacritics::new(Arc::clone(dictionary), learning_on());
+    let mut field = Vec::new();
+    d.committed("toi ", "toi ", true);
+    field.push("toi".to_string());
+    d.committed("ngo ", "", false);
+    field.push("ngo".to_string());
+    apply_changes(d.pull_changes(), &mut field);
+    assert_eq!(field, ["tôi", "gõ"], "the macro's word is fixed");
+    assert!(d.undo_fix().is_some());
+    d
+}
+
+#[test]
+fn an_undone_macro_word_is_never_learned() {
+    let dictionary = shared_dictionary();
+    let mut d = undone_macro_word(&dictionary);
+    d.committed("ngo.", "ngo.", true);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_word_typed_after_an_undone_macro_word_is_learned() {
+    let dictionary = shared_dictionary();
+    let mut d = undone_macro_word(&dictionary);
+    // The reopened word is erased and another typed in its place.
+    d.committed("ngó.", "ngos.", true);
+    assert!(!dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn words_typed_beside_a_macro_are_still_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("nsen", "ngó sen")]);
+    type_into(&mut e, &mut Vec::new(), &[("nsen", ' '), ("ngos", '.')]);
+    assert!(!dictionary.lock().unwrap().is_empty());
+}
+
+/// Types `rest` into `field`, then `last` ended by the key `end`.
+fn type_ending(
+    e: &mut BambooEngine,
+    field: &mut Vec<String>,
+    rest: &[(&str, char)],
+    last: &str,
+    end: u32,
+) {
+    type_into(e, field, rest);
+    type_keys(e, last);
+    e.process_key_event(end, 0);
+    commit_into(e, field);
+    apply_changes(e.pull_changes(), field);
+}
+
+/// A field whose run opened with `opening`, while the dictionary held ngó sen, goes on after
+/// everything learned is forgotten. Returns the field and whether anything was learned.
+fn typed_across_a_forget(
+    opening: &[(&str, char)],
+    go_on: impl FnOnce(&mut BambooEngine, &mut Vec<String>),
+) -> (Vec<String>, bool) {
+    let dictionary = shared_dictionary();
+    let learning = learning_on();
+    let mut teacher = engine_learning(&dictionary, &learning);
+    type_into(
+        &mut teacher,
+        &mut Vec::new(),
+        &[("ngos", ' '), ("sen", '.')],
+    );
+    let mut e = engine_learning(&dictionary, &learning);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, opening);
+    dictionary.lock().unwrap().clear();
+    learning.forgot();
+    go_on(&mut e, &mut field);
+    e.reset();
+    let learned = !dictionary.lock().unwrap().is_empty();
+    (field, learned)
+}
+
+#[test]
+fn a_run_open_across_a_forget_stops_guessing_with_what_was_forgotten() {
+    for end in ['.' as u32, KEY_TAB] {
+        let mut never_learned = Vec::new();
+        let mut e = engine_on(&shared_dictionary());
+        type_ending(
+            &mut e,
+            &mut never_learned,
+            &[("ta", ' '), ("ngo", ' ')],
+            "sen",
+            end,
+        );
+        let (field, _) = typed_across_a_forget(&[("ta", ' ')], |e, field| {
+            type_ending(e, field, &[("ngo", ' ')], "sen", end);
+        });
+        assert_eq!(field, never_learned, "{end}");
+    }
+}
+
+#[test]
+fn a_run_open_across_a_forget_learns_nothing() {
+    let (_, learned) = typed_across_a_forget(&[("ngos", ' ')], |e, field| {
+        type_into(e, field, &[("sen", '.')]);
+    });
+    assert!(!learned, "typing on");
+    // Turning Đoán dấu off ends the run with nothing committed first.
+    let (_, learned) = typed_across_a_forget(&[("ngos", ' ')], |e, _| e.remove_diacritics());
+    assert!(!learned, "turned off");
+}
+
+#[test]
+fn a_run_goes_on_past_the_cap() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    let words = vec![("ta", ' '); timsen::MAX_RUN + 1];
+    type_into(&mut e, &mut field, &words);
+    assert_eq!(field.len(), timsen::MAX_RUN + 1);
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 1);
+}
+
+#[test]
+fn a_commit_across_the_cap_restores_both_runs() {
+    let mut d = Diacritics::new(shared_dictionary(), learning_on());
+    let mut field = Vec::new();
+    for _ in 0..timsen::MAX_RUN - 1 {
+        d.committed("ta ", "ta ", true);
+        field.push("ta".to_string());
+    }
+    // A macro can commit several words at once; the first fills the run, the second starts the next.
+    d.committed("toi go ", "toi go ", true);
+    field.extend(["toi".to_string(), "go".to_string()]);
+    apply_changes(d.pull_changes(), &mut field);
+    assert_eq!(field[timsen::MAX_RUN - 1..], ["tôi", "gõ"]);
+}
+
+#[test]
+fn digits_split_words_and_end_the_run() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("toi1", ' ')]);
+    assert_eq!(field, ["tôi"]);
+    assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 0);
+}
+
+fn owned_words(text: &str) -> Vec<String> {
+    diacritics::words_of(text)
+        .into_iter()
+        .map(str::to_string)
+        .collect()
+}
+
+#[test]
+fn a_commit_of_two_sentences_ends_the_run_between_them() {
+    let mut whole = Diacritics::new(shared_dictionary(), learning_on());
+    let mut parts = Diacritics::new(shared_dictionary(), learning_on());
+    let (mut one, mut two) = (Vec::new(), Vec::new());
+    whole.committed("ban thich go. phim ", "", true);
+    one.extend(owned_words("ban thich go. phim "));
+    apply_changes(whole.pull_changes(), &mut one);
+    for text in ["ban thich go.", " phim "] {
+        parts.committed(text, "", true);
+        two.extend(owned_words(text));
+        apply_changes(parts.pull_changes(), &mut two);
+    }
+    assert_eq!(one, two);
+    assert_eq!(one[2], "gỗ");
+}
+
+#[test]
+fn a_private_word_reopened_after_its_commit_is_never_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.set_private(true);
+    type_keys(&mut e, "ngos");
+    e.set_private(false);
+    e.process_key_event(KEY_SPACE, 0);
+    e.rebuild_from_text("ngó");
+    e.process_key_event(KEY_SPACE, 0);
+    type_into(&mut e, &mut Vec::new(), &[("sen", '.')]);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_digit_inside_a_commit_ends_the_run_there() {
+    let mut d = Diacritics::new(shared_dictionary(), learning_on());
+    let mut field = Vec::new();
+    // A macro can commit a digit inside the text; the run ends at it, as at a period.
+    d.committed("ban thich go1 ", "", true);
+    field.extend(owned_words("ban thich go1 "));
+    apply_changes(d.pull_changes(), &mut field);
+    assert_eq!(field, ["bạn", "thích", "gỗ"]);
+}
+
+#[test]
+fn a_private_word_rebuilt_by_backspace_is_still_never_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = new_test_engine(&["tôi"], true);
+    e.keep_guard = Arc::new(["zzz".to_string()].into_iter().collect());
+    e.set_diacritics(Arc::clone(&dictionary), learning_on());
+    e.set_private(true);
+    e.rebuild_from_text("tôi");
+    e.set_private(false);
+    type_keys(&mut e, "q");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    e.process_key_event('.' as u32, 0);
+    assert!(
+        e.pull_commit().contains("tôi"),
+        "the word is committed after all"
+    );
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn restoring_text_reads_each_stretch_between_punctuation_as_one_run() {
+    let runs = std::cell::RefCell::new(Vec::new());
+    let out = diacritics::restore_runs("Toi, go  phim! 12 ab", |words| {
+        runs.borrow_mut().push(words.join(" "));
+        words.iter().map(|w| w.to_uppercase()).collect()
+    });
+    assert_eq!(
+        out, "TOI, GO  PHIM! 12 AB",
+        "what lies between the words stays"
+    );
+    assert_eq!(runs.into_inner(), ["Toi", "go phim", "ab"]);
+}
+
+#[test]
+fn text_typed_without_marks_gets_them_for_cuu_chu() {
+    let mut e = engine_on(&shared_dictionary());
+    assert_eq!(
+        e.restore_text("toi go phim").as_deref(),
+        Some("tôi gõ phím")
+    );
+    assert_eq!(e.restore_text("ban phim.").as_deref(), Some("bàn phím."));
+    assert_eq!(e.restore_text("tôi"), None, "nothing to change");
+    e.set_private(true);
+    assert_eq!(
+        e.restore_text("toi go phim"),
+        None,
+        "never in a private field"
+    );
+}
+
+#[test]
+fn restoring_text_needs_diacritics() {
+    let e = new_test_engine(&[], false);
+    assert_eq!(e.restore_text("toi go phim"), None);
+}

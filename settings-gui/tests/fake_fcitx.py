@@ -51,6 +51,15 @@ def lock_groups():
     ]
 
 
+def unlocker(key):
+    """The setting at the top of key's chain in DEPENDS: with every lock on, the one to change."""
+    from core.catalog import DEPENDS
+
+    while key in DEPENDS:
+        key = DEPENDS[key][0]
+    return key
+
+
 class FakeDBusHandler:
     """Behaves like fcitx5's Controller1 for the ngosen addon: partial SetConfig, sub configs."""
 
@@ -78,15 +87,27 @@ class FakeDBusHandler:
     TCVN3 = str.maketrans({"Õ": "ế", "Ö": "ệ", "µ": "à", "é": "ộ"})
 
     def convert_text(self, text, from_charset, to_charset, letter_case, strip_diacritics):
-        from core.convert import ConvertError
+        from core.ngosen_call import CallError
 
         self.conversions = getattr(self, "conversions", [])
         self.conversions.append((text, from_charset, to_charset, letter_case, strip_diacritics))
         if hasattr(self, "convert_error"):
-            raise ConvertError(self.convert_error)
+            raise CallError(self.convert_error)
         if from_charset == "TCVN3 (ABC)" and to_charset == "Unicode":
             text = text.translate(self.TCVN3)
         return text.upper() if letter_case == 1 else text
+
+    def call_ngosen(self, method, *args):
+        """Answers from ngosen_answers; a str answer is the D-Bus error raised. Until a test says
+        otherwise, Ngó Sen is not loaded."""
+        from core.ngosen_call import NOT_LOADED, CallError
+
+        self.ngosen_calls = getattr(self, "ngosen_calls", [])
+        self.ngosen_calls.append(method)
+        answer = getattr(self, "ngosen_answers", {}).get(method, NOT_LOADED[0])
+        if isinstance(answer, str) or answer is None:
+            raise CallError(answer)
+        return answer
 
     def get_sub_config_list(self, path, root_key):
         return copy.deepcopy(self.sub_configs.get(path, []))

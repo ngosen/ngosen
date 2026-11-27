@@ -63,6 +63,11 @@ Qt version on KDE Plasma:
 - Word finalization key: press and release Ctrl alone (the default) to keep the word as displayed,
   without adding tone marks or expanding macros. The next key starts a new word. For example, type
   `tunx`, press and release Ctrl, then press Space to keep `tũn`.
+- Đoán dấu (adding marks): typing `toi di hoc` without marks gives `tôi đi học`. Off by default; turn it
+  on on the "Đoán chữ" (Word guessing) settings page, which can also fix syllables typed wrong, at three
+  levels of boldness. In terminals and old X11 apps using XIM it stays off unless "Đoán cả
+  trong terminal" (Guess in terminals too) is on: there it cannot correct earlier words, so it guesses
+  wrong more often. It learns from what you type; see [What word guessing learns](#what-word-guessing-learns).
 - Macros: with "Gõ tắt chữ hoa" enabled, a `ko` → `không` macro expands `Ko` to `Không`.
   Content that already contains uppercase letters stays unchanged: with `ip` → `iPhone`, typing `Ip`
   still produces `iPhone`.
@@ -84,6 +89,25 @@ Qt version on KDE Plasma:
   and options to send results through Facebook or GitHub, or copy them.
 
 See [CHANGELOG.md](CHANGELOG.md) for details of each version.
+
+### What word guessing learns
+
+While Đoán dấu is on, it learns from what you type. Learning is on by default, and the first time it
+learns, a desktop notification says so once.
+
+- What: words with marks that Ngó Sen put into a field, both words you typed with marks and words you
+  kept as typed with Backspace after a wrong guess. Not words it guessed itself, and not text from macros.
+- What is kept: runs of one, two and three words with how often each came, and where a run of typing
+  started and ended. Put together, they can show short sentences you typed.
+- When: when a run of typing ends, that is, you leave the field, click, press Enter, or type 200
+  syllables. Text typed and then deleted with Backspace may still have been learned.
+- Never: in password or private fields. In a terminal only with "Đoán cả trong terminal" on, and even then
+  not when Ngó Sen can tell it hides what you type (judged from signs, so it can miss). Nothing in Off mode,
+  or with Đoán dấu or learning off.
+- Where: `~/.local/share/ngosen/learned-diacritics`, plain text only you can read, saved every 5 minutes
+  when there is something new and when fcitx5 quits. Nothing is sent anywhere.
+- View, forget, turn off: the "Đoán chữ" page has "Xem" (View), "Quên hết" (Forget all) and the "Học từ
+  chữ bạn gõ" (Learn from what you type) switch. Restoring defaults keeps what was learned and the switch.
 
 ## Which mode to use
 
@@ -466,6 +490,9 @@ The core that turns `tieengs` into `tiếng` is the Rust
 [bamboo-core](https://github.com/BambooEngine/bamboo-core) by
 [@t1ld3x](https://github.com/t1ld3x). Both projects are MIT licensed.
 The core's English word list comes from [SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
+The table behind diacritic guessing holds word-sequence counts, no sentences, made by
+[Tim Sen](https://github.com/ngosen/timsen) from Vietnamese Wikipedia (CC BY-SA 4.0), FineWeb-2
+(ODC-By 1.0) and [OpenSubtitles](http://www.opensubtitles.org/) via [OPUS](https://opus.nlpl.eu); it is licensed CC BY-SA 4.0.
 All Ngó Sen packages, including Debian 12, use the Rust version.
 
 Issues and pull requests from before 10/10/2026 are in the archive repo

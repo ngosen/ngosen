@@ -11,7 +11,7 @@ from urllib.parse import unquote
 
 # isort: off
 import window_display
-from fake_fcitx import DEFAULTS, FakeDBusHandler, OlderFcitx, lock_groups
+from fake_fcitx import DEFAULTS, FakeDBusHandler, OlderFcitx, lock_groups, unlocker
 import ui_gtk
 
 # isort: on
@@ -25,7 +25,6 @@ NARROWEST_WINDOW = 360
 if CAN_RUN:
     from core.brand import MESSENGER_URL
     from core.catalog import (
-        DEPENDS,
         HINTS,
         MODE_BUTTON_ORDER,
         MODE_HINTS,
@@ -684,7 +683,7 @@ class GtkLocksTest(unittest.TestCase):
 
     @staticmethod
     def page_with(w, key):
-        pages = (w.typing, w.shortcuts, w.appearance, w.macros, w.emoji)
+        pages = (w.typing, w.guessing, w.shortcuts, w.appearance, w.macros, w.emoji)
         return next(p for p in pages if p.control_for(key) is not None)
 
     def test_every_locked_setting_is_insensitive_and_opens_what_unlocks_it(self):
@@ -697,7 +696,7 @@ class GtkLocksTest(unittest.TestCase):
                 )
                 self.assertFalse(locked.get_sensitive(), key)
                 self.assertTrue(w.open_setting(key), key)
-                self.assertIs(w.get_focus(), page.control_for(DEPENDS[key][0]), key)
+                self.assertIs(w.get_focus(), page.control_for(unlocker(key)), key)
 
     def test_every_setting_is_sensitive_and_opens_itself_when_unlocked(self):
         for _locked, values, keys in lock_groups():
@@ -722,7 +721,7 @@ class GtkLocksTest(unittest.TestCase):
                 while w.results.get_row_at_index(index).found[2] != key:
                     index += 1
                 w.open_result(w.results.get_row_at_index(index))
-                self.assertIs(w.get_focus(), page.control_for(DEPENDS[key][0]), key)
+                self.assertIs(w.get_focus(), page.control_for(unlocker(key)), key)
 
     def test_a_controller_locks_and_unlocks_at_once(self):
         w = self.window({"AutoNonVnRestore": "True", "EnableMacro": "True"})
@@ -814,6 +813,16 @@ class GtkStatusLinesTest(unittest.TestCase):
         self.assertFalse(w.macros.switches["EnableMacro"].get_active())
         self.assertFalse(w.macros.formats["TimeFormat"].get_sensitive())
         self.assertTrue(w.dictionary.switch.get_active())
+        self.assertEqual(fake.values, written)
+
+    def test_guessing_saved_outside_the_window_shows_and_unlocks(self):
+        fake = FakeDBusHandler({"GuessDiacritics": "False", "GuessFixesTypos": "False"})
+        w = self.window(fake)
+        fake.values["GuessDiacritics"] = "True"
+        written = dict(fake.values)
+        w._refresh_statuses()
+        self.assertTrue(w.guessing.rows["GuessDiacritics"].get_active())
+        self.assertTrue(w.guessing.rows["GuessFixesTypos"].get_sensitive())
         self.assertEqual(fake.values, written)
 
     def test_the_custom_note_needs_keys_as_in_the_qt_window(self):
@@ -1349,6 +1358,13 @@ class GtkSearchTest(unittest.TestCase):
         self.assertEqual(self.window.stack.get_visible_child_name(), "typing")
         self.assertIs(self.window.get_focus(), results[0].found[0])
         self.assertEqual(self.window.side_stack.get_visible_child_name(), "pages")
+
+    def test_guessing_settings_open_on_their_own_page(self):
+        for key in ("GuessDiacritics", "GuessFixesTypos"):
+            self.window.show_page("about")
+            self.assertTrue(self.window.open_setting(key), key)
+            self.assertEqual(self.window.stack.get_visible_child_name(), "guessing", key)
+            self.assertIsNone(self.window.typing.control_for(key), key)
 
     def test_enter_right_after_typing_opens_what_was_typed(self):
         self.search("about")

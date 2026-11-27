@@ -85,6 +85,8 @@ namespace ngosen::test {
         static const uintptr_t keepWords    = wordList(NGOSEN_TEST_KEEP_WORDS);
         englishWords_                       = englishWords;
         keepWords_                          = keepWords;
+        // Each its own, so what one test teaches Đoán dấu never reaches another.
+        diacritics_ = DiacriticsOpen(NGOSEN_TEST_DIACRITICS, "");
     }
 
     void FakeResources::setMacros(const std::vector<std::pair<std::string, std::string>>& macros) {
@@ -98,9 +100,20 @@ namespace ngosen::test {
         macroTable_ = NewMacroTable(pairs.data());
     }
 
+    void FakeResources::learnDiacriticsInto(const std::string& path) {
+        DeleteObject(diacritics_);
+        diacritics_ = DiacriticsOpen(NGOSEN_TEST_DIACRITICS, path.c_str());
+        DiacriticsSetLearning(diacritics_, 1);
+    }
+
+    bool FakeResources::learnedDiacritics() {
+        return DiacriticsSave(diacritics_, 1) != 0;
+    }
+
     FakeResources::~FakeResources() {
         DeleteObject(macroTable_);
         DeleteObject(dictionary_);
+        DeleteObject(diacritics_);
     }
 
     bool FakeKey::isModifier() const {

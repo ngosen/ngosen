@@ -15,6 +15,9 @@ SUB_CONFIGS = (
     ("teencode_apps", "Apps"),
 )
 
+# fcitx5 sets these once it told the user something; putting back an older value would tell again.
+SHOWN_MARKS = ("LearningAnnounced",)
+
 
 def local_dict_path():
     xdg_data_home = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
@@ -41,7 +44,8 @@ def take(dbus):
 
 
 def restore(dbus, snapshot):
-    ok = dbus.set_config(snapshot["config"])
+    config = {k: v for k, v in snapshot["config"].items() if k not in SHOWN_MARKS}
+    ok = dbus.set_config(config)
     for path, root_key in SUB_CONFIGS:
         ok = dbus.set_sub_config_list(path, root_key, snapshot[path]) and ok
     dict_path = local_dict_path()

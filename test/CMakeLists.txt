@@ -125,6 +125,8 @@ add_ngosen_headless_test(mode_name_migration mode-name-migration.cpp "integratio
 add_ngosen_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")
 add_ngosen_headless_test(options_sync options-sync.cpp "integration;config")
 add_ngosen_headless_test(emoji_settings emoji-settings.cpp "integration;config")
+add_ngosen_headless_test(learned_diacritics learned-diacritics.cpp "integration;config")
+target_compile_definitions(learned_diacritics PRIVATE NGOSEN_TEST_DIACRITICS="${PROJECT_SOURCE_DIR}/bamboo-rs/src/engine/tiny.timsen")
 if (Fcitx5ModuleDBus_FOUND)
     add_ngosen_headless_test(dbus_convert_text dbus-convert-text.cpp "unit;dbus")
     add_ngosen_headless_test(dbus_toggle_vietnamese dbus-toggle-vietnamese.cpp "integration;dbus;apprule")

@@ -118,6 +118,13 @@ class RoundTripTest(unittest.TestCase):
             self.assertTrue(backup.apply(target, backup.load(path)))
         self.assertEqual(target.sub_configs["teencode_apps"], apps)
 
+    def test_a_backup_does_not_bring_back_a_notice_already_shown(self):
+        target = fake_fcitx.FakeDBusHandler({"LearningAnnounced": "True"})
+        data = {"config": {"DdFreeStyle": "False", "LearningAnnounced": "False"}}
+        self.assertTrue(backup.apply(target, data))
+        self.assertEqual(target.values["DdFreeStyle"], "False")
+        self.assertEqual(target.values["LearningAnnounced"], "True")
+
     def test_an_older_backup_brings_its_rules_back_without_todays_switches(self):
         rules = [{"App": "kate", "Mode": "0"}]
         target = fake_fcitx.FakeDBusHandler(

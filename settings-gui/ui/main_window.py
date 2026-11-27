@@ -357,6 +357,11 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return DynamicSettingsPage(self.dbus_handler, category=SettingsCategory.APPEARANCE)
 
+        def create_guessing():
+            from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
+
+            return DynamicSettingsPage(self.dbus_handler, category=SettingsCategory.GUESSING)
+
         def create_about():
             from ui.pages.about import AboutPage
 
@@ -375,6 +380,12 @@ class NgoSenSettingsWindow(QMainWindow):
             return WhatsNewPage(self.open_setting, self.show_page)
 
         self._add_page(_("Typing"), "input-keyboard", (None, create_typing), names=["typing"])
+        self._add_page(
+            _("Word guessing"),
+            ("tools-check-spelling", "tools-check-spelling-symbolic"),
+            (None, create_guessing),
+            names=["guessing"],
+        )
         self._add_page(
             _("Macros & Dictionary"),
             "accessories-text-editor",

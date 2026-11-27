@@ -342,6 +342,52 @@
     {}
    ],
    [
+    "GuessDiacritics",
+    "Boolean",
+    "Add marks to words typed without them",
+    "False",
+    {}
+   ],
+   [
+    "GuessFixesTypos",
+    "Boolean",
+    "Also fix syllables typed wrong",
+    "False",
+    {}
+   ],
+   [
+    "GuessFixStrength",
+    "Enum",
+    "How boldly to fix",
+    "Cautious",
+    {
+     "EnumI18n": {
+      "0": "Cautious",
+      "1": "Medium",
+      "2": "Strong"
+     },
+     "Enum": {
+      "0": "Cautious",
+      "1": "Medium",
+      "2": "Strong"
+     }
+    }
+   ],
+   [
+    "GuessInTerminals",
+    "Boolean",
+    "Guess in terminals too",
+    "False",
+    {}
+   ],
+   [
+    "LearnDiacritics",
+    "Boolean",
+    "Learn from what you type",
+    "True",
+    {}
+   ],
+   [
     "RawWordAfterSlash",
     "Boolean",
     "Type a word that starts with / as is",

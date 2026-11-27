@@ -10,7 +10,7 @@ from datetime import datetime
 from i18n import _
 
 from core.emoji_words import SHARE_KIND
-from core.settings_snapshot import local_dict_path
+from core.settings_snapshot import SHOWN_MARKS, local_dict_path
 
 COMPONENTS = (
     "config",
@@ -114,7 +114,8 @@ def apply(dbus, backup):
     """Writes what the backup holds and leaves the rest alone. Returns False if a part failed."""
     ok = True
     if "config" in backup:
-        ok = dbus.set_config(backup["config"]) and ok
+        config = {k: v for k, v in backup["config"].items() if k not in SHOWN_MARKS}
+        ok = dbus.set_config(config) and ok
     if "rules" in backup and "switches" not in backup and _edition(backup) != "ibus":
         # A backup from before switches existed: today's switches would override its rules.
         # The IBus edition has no switches of its own, so this machine's stay.

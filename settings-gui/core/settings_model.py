@@ -7,7 +7,13 @@ import os
 
 from i18n import _
 
-from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, TRAY_IMAGE_KEYS, TRAY_LETTERS, locked_by
+from core.catalog import (
+    KEPT_ON_RESET,
+    MODE_SHORTCUT_TO_VISIBILITY,
+    TRAY_IMAGE_KEYS,
+    TRAY_LETTERS,
+    locked_by,
+)
 
 # Desktops that list GNOME but draw their own panel; keep in step with isGnomeShellSession.
 OWN_PANEL_DESKTOPS = {"Budgie", "Pantheon", "GNOME-Flashback", "Unity", "X-Cinnamon", "MATE"}
@@ -47,6 +53,18 @@ class SettingsModel:
             return None
         return {key: item[3] for key, item in self.metadata.items()}
 
+    def reset_values(self):
+        """Every setting as restoring defaults leaves it: the default, or as saved now if kept."""
+        defaults = self.defaults()
+        if defaults is None:
+            return None
+        # Another page may have changed a kept setting since this one loaded.
+        latest = (self.dbus.get_config() or {}).get("values", self.current)
+        return {
+            key: latest.get(key, value) if key in KEPT_ON_RESET else value
+            for key, value in defaults.items()
+        }
+
     def default(self, key, fallback=""):
         item = self.metadata.get(key)
         return item[3] if item else fallback
@@ -76,7 +94,8 @@ class SettingsModel:
     def is_modified_from_default(self):
         for key, val in self.current.items():
             meta = self.metadata.get(key)
-            if not meta:
+            # Restoring defaults would not change it.
+            if not meta or key in KEPT_ON_RESET:
                 continue
             default_val = meta[3]
             # A hotkey list arrives as {"0": key}.

@@ -5,7 +5,7 @@ import unittest
 
 # isort: off
 from support import FakeDBusHandler, app
-from fake_fcitx import lock_groups
+from fake_fcitx import lock_groups, unlocker
 from core.catalog import DEPENDS, locked_by
 from core.settings_model import SettingsModel
 from qtpy.QtCore import Qt
@@ -51,9 +51,21 @@ class LockedByTest(unittest.TestCase):
             self.assertIn(key, model.metadata)
             self.assertIn(controller, model.metadata)
 
-    def test_each_setting_is_one_step_from_its_controller(self):
-        for controller, _needed in DEPENDS.values():
-            self.assertNotIn(controller, DEPENDS)
+    def test_a_lock_follows_the_chain_to_what_can_be_changed(self):
+        def lock(**values):
+            return locked_by("GuessFixStrength", values.get)
+
+        self.assertEqual(lock(GuessDiacritics="False", GuessFixesTypos="True"), "GuessDiacritics")
+        self.assertEqual(lock(GuessDiacritics="False", GuessFixesTypos="False"), "GuessDiacritics")
+        self.assertEqual(lock(GuessDiacritics="True", GuessFixesTypos="False"), "GuessFixesTypos")
+        self.assertIsNone(lock(GuessDiacritics="True", GuessFixesTypos="True"))
+
+    def test_no_chain_comes_back_to_where_it_started(self):
+        for key in DEPENDS:
+            seen = [key]
+            while seen[-1] in DEPENDS:
+                seen.append(DEPENDS[seen[-1]][0])
+                self.assertEqual(len(seen), len(set(seen)), seen)
 
 
 class QtWindowLocksTest(unittest.TestCase):
@@ -78,7 +90,7 @@ class QtWindowLocksTest(unittest.TestCase):
                 page = self.page_with(window, key)
                 self.assertFalse(page.control_for(key).isEnabled(), key)
                 self.assertTrue(window.open_setting(key), key)
-                self.assertIs(window.focusWidget(), page.control_for(DEPENDS[key][0]), key)
+                self.assertIs(window.focusWidget(), page.control_for(unlocker(key)), key)
 
     def test_every_setting_is_enabled_and_opens_itself_when_unlocked(self):
         for _locked, unlocked, keys in LOCK_GROUPS:
@@ -103,7 +115,7 @@ class QtWindowLocksTest(unittest.TestCase):
                 ]
                 self.assertTrue(found, key)
                 window.open_search_result(found[0])
-                self.assertIs(window.focusWidget(), page.control_for(DEPENDS[key][0]), key)
+                self.assertIs(window.focusWidget(), page.control_for(unlocker(key)), key)
 
     @staticmethod
     def shown_name(page, key):

@@ -47,7 +47,8 @@ namespace ngosen {
         if (g_mouse_clicked.exchange(false, std::memory_order_acq_rel))
             typedWhileOff_.clear();
         const uint32_t sym = key.sym();
-        if (host_->field().password || isShortcut(key)) {
+        // Another input method gets these keys, so passesHiddenInput never sees them.
+        if (host_->field().password || isShortcut(key) || terminalHidesInput()) {
             typedWhileOff_.clear();
         } else if (ngosen::key::isBackspace(sym)) {
             if (!typedWhileOff_.empty())
@@ -76,20 +77,38 @@ namespace ngosen {
     std::string TypingState::addMarks(const std::string& typed) {
         std::string out;
         ResetEngine(bambooEngine_.handle());
+        // Its own engine, so Đoán dấu never learns keys typed while Vietnamese was off.
+        CGoObject engine(newBambooEngine());
+        setOption(engine.handle());
         for (const char c : typed) {
-            const bool               processed = EngineProcessKeyEvent(bambooEngine_.handle(), static_cast<unsigned char>(c), 0) != 0U;
-            ngosen::UniqueCPtr<char> commit(EnginePullCommit(bambooEngine_.handle()));
+            const bool               processed = EngineProcessKeyEvent(engine.handle(), static_cast<unsigned char>(c), 0) != 0U;
+            ngosen::UniqueCPtr<char> commit(EnginePullCommit(engine.handle()));
             if (commit)
                 out += commit.get();
             if (!processed)
                 out += c;
         }
-        EngineCommitPreedit(bambooEngine_.handle());
-        ngosen::UniqueCPtr<char> rest(EnginePullCommit(bambooEngine_.handle()));
+        EngineCommitPreedit(engine.handle());
+        ngosen::UniqueCPtr<char> rest(EnginePullCommit(engine.handle()));
         if (rest)
             out += rest.get();
-        ResetEngine(bambooEngine_.handle());
         return out;
+    }
+
+    // Words with no Telex key in them can still take marks from Đoán dấu. Telex leaves each word
+    // alone, so the result is only offered, never applied at once.
+    std::string TypingState::guessMarks(const std::string& typed) {
+        const uintptr_t diacritics = engine_->diacritics();
+        if (diacritics == 0 || host_->field().hidesText() || !guessesHere())
+            return typed;
+        CGoObject engine(newBambooEngine());
+        setOption(engine.handle());
+        EngineSetDiacritics(engine.handle(), diacritics);
+        const ngosen::UniqueCPtr<char> guessed(EngineRestoreText(engine.handle(), typed.c_str()));
+        if (!guessed)
+            return typed;
+        NGOSEN_INFO("Guess: Cứu chữ offers marks");
+        return guessed.get();
     }
 
     bool TypingState::everyWordTakesMarks(const std::string& typed) {
@@ -111,6 +130,10 @@ namespace ngosen {
 
     bool TypingState::reportsTextInTime() const {
         return host_->field().surroundingText && !ngosen::surroundingTextLags(host_->field());
+    }
+
+    bool TypingState::terminalHidesInput() const {
+        return ngosen::runsShellOnPty(host_->field()) && engine_->anyTerminalHidesInput();
     }
 
     // mayDropStart also accepts a field that holds only the end of typed.
@@ -149,11 +172,14 @@ namespace ngosen {
             return;
         if (!bambooEngine_ || !engine_->options().retypeAfterSwitch || typed.empty() || ngosen::isGnomeSearch(host_->field()))
             return;
-        if (!canReplaceInApp())
+        // The switch comes before the key that would tell a password prompt is showing.
+        if (!canReplaceInApp() || terminalHidesInput())
             return;
         if (!typedBeforeCursor(typed, true))
             return;
         std::string marked = addMarks(typed);
+        if (marked == typed)
+            marked = guessMarks(typed);
         if (marked == typed)
             return;
         // A word Telex leaves alone is likely English typed on purpose, so then only offer.

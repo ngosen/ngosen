@@ -50,6 +50,14 @@ namespace ngosen::test {
         uintptr_t keepWords() const override {
             return keepWords_;
         }
+        uintptr_t diacritics() const override {
+            return options_.guessDiacritics ? diacritics_ : 0;
+        }
+        // Gives Đoán dấu a file to learn into, so a test can ask what it learned; call before building a
+        // TypingState.
+        void learnDiacriticsInto(const std::string& path);
+        // Saves what Đoán dấu learned since the last call; false when it learned nothing.
+        bool learnedDiacritics();
         // Replaces the macro table; call before building a TypingState.
         void setMacros(const std::vector<std::pair<std::string, std::string>>& macros);
         bool anyTerminalHidesInput() const override {
@@ -73,6 +81,7 @@ namespace ngosen::test {
         uintptr_t                macroTable_   = 0;
         uintptr_t                englishWords_ = 0;
         uintptr_t                keepWords_    = 0;
+        uintptr_t                diacritics_   = 0;
         Recorder                 recorder_;
     };
 

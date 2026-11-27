@@ -9,6 +9,7 @@ mod convert;
 mod engine;
 mod ffi;
 mod handles;
+mod learned;
 mod macro_table;
 mod spelling;
 mod text;

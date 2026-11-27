@@ -10,8 +10,19 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Đoán dấu: gõ không dấu `toi di hoc` ra `tôi đi học`, bật ở trang mới **Đoán chữ** trong cửa sổ cài đặt.
+  Trang này có thêm lựa chọn sửa cả âm tiết gõ sai, với ba mức thận trọng, vừa, mạnh. Đoán dấu học từ chữ
+  bạn gõ để đoán sát cách bạn viết; việc học bật sẵn, báo một lần bằng thông báo, và trang Đoán chữ có nút
+  Xem, Quên hết cùng lời nói rõ học gì, lưu ở đâu. Chữ bung ra từ gõ tắt không bao giờ được học. Trong
+  terminal, Đoán dấu nghỉ trừ khi bật **Đoán cả trong terminal**, vì ở đó nó không sửa lại được chữ trước.
+  Gói cài có sẵn bảng đoán dấu (12 MB), không cần tải gì thêm và không cần mạng. (#1034)
+
 ### Sửa
 
+- Terminal của Xfce (xfce4-terminal) được nhận ra là terminal như Konsole: ở dấu nhắc mật khẩu phím vào
+  đúng như gõ, và chữ có dấu tách rời xoá đúng bằng Backspace. (#1034)
 - Trên KDE Plasma (Wayland), WPS Office gõ được tiếng Việt mà không cần tự đặt `QT_IM_MODULE=fcitx`, kể cả khi cài
   Ngó Sen từ kho gói hay AUR hoặc cài WPS sau: mỗi lần đăng nhập, Ngó Sen tự cho lối tắt WPS (và bản Flatpak) chạy
   với fcitx5 (#1032).

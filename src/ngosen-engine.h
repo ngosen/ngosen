@@ -126,6 +126,8 @@ namespace fcitx {
         void reloadConfig() override;
         // Shows the one-time "What's new" notification for a feature release.
         void announceRelease(const std::string& release);
+        // Tells, once, that Đoán dấu learns from what the user types.
+        void announceLearning();
 
         /**
          * @brief Gets the current configuration.
@@ -214,6 +216,9 @@ namespace fcitx {
         uintptr_t keepWords() const override {
             return keepWords_.handle();
         }
+        uintptr_t diacritics() const override {
+            return options_.guessDiacritics ? diacritics_.handle() : 0;
+        }
 
         ngosen::Recorder& recorder() override {
             return recorder_;
@@ -227,6 +232,14 @@ namespace fcitx {
         // For a desktop shortcut, which reaches the engine while no field may be focused. Returns whether
         // Vietnamese is on, or nothing when fcitx5 would not switch the field to Ngó Sen.
         std::optional<bool> toggleFromShortcut();
+
+        // For the settings window. Đoán dấu's table is "off" (never opened), "loaded" or "missing",
+        // with why the file of what it learned did not load, if it did not.
+        std::pair<std::string, std::string> diacriticsStatus() const;
+        // Saves what Đoán dấu learned: "saved", "unchanged" or "failed", with why it failed.
+        std::pair<std::string, std::string> saveLearned();
+        // Forgets what Đoán dấu learned, in memory and on disk; on failure, why.
+        std::pair<bool, std::string> forgetLearned();
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
         std::string getProgramName(InputContext* ic) const;
@@ -287,6 +300,8 @@ namespace fcitx {
         ngosen::CGoObject                           dictionary_;
         ngosen::CGoObject                           englishWords_;
         ngosen::CGoObject                           keepWords_;
+        ngosen::CGoObject                           diacritics_;
+        std::unique_ptr<EventSourceTime>            saveDiacriticsTimer_;
         std::unordered_map<std::string, NgoSenMode> appRules_;
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
@@ -303,6 +318,7 @@ namespace fcitx {
         std::string                      currentConfigureApp_;
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
         std::unique_ptr<EventSourceTime> announceTimer_;
+        std::unique_ptr<EventSourceTime> announceLearningTimer_;
         std::unique_ptr<EventSourceTime> menuClickTimer_;
         // Instance::eventDispatcher() needs fcitx5 newer than Ubuntu 24.04 and Debian 12 ship.
         EventDispatcher clickDispatcher_;
@@ -429,6 +445,7 @@ namespace fcitx {
         void loadAppRules();
 
         void loadWordList(ngosen::CGoObject& list, const char* path);
+        void openDiacritics();
 
         /**
          * @brief Saves application-specific mode rules.

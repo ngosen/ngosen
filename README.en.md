@@ -491,6 +491,9 @@ The core that turns `tieengs` into `tiếng` is the Rust
 [bamboo-core](https://github.com/BambooEngine/bamboo-core) by
 [@t1ld3x](https://github.com/t1ld3x). Both projects are MIT licensed.
 The core's English word list comes from [SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
+The table behind diacritic guessing holds word-sequence counts, no sentences, made by
+[Tim Sen](https://github.com/ngosen/timsen) from Vietnamese Wikipedia (CC BY-SA 4.0), FineWeb-2
+(ODC-By 1.0) and [OpenSubtitles](http://www.opensubtitles.org/) via [OPUS](https://opus.nlpl.eu); it is licensed CC BY-SA 4.0.
 All Ngó Sen packages, including Debian 12, use the Rust version.
 
 Issues and pull requests from before 10/10/2026 are in the archive repo

@@ -504,6 +504,9 @@ Cấu hình được giữ lại để lần cài sau dùng tiếp: các file `n
   [bamboo-core](https://github.com/BambooEngine/bamboo-core) của [@t1ld3x](https://github.com/t1ld3x)
   (giấy phép **MIT**). Mọi gói Ngó Sen, kể cả Debian 12, đều dùng bản Rust.
 - Danh sách từ tiếng Anh trong lõi lấy từ [SCOWL](https://wordlist.aspell.net) của Kevin Atkinson.
+- Bảng của Đoán dấu là số đếm cụm chữ (không chứa câu nào) do [Tim Sen](https://github.com/ngosen/timsen)
+  đếm trên Wikipedia tiếng Việt (CC BY-SA 4.0), FineWeb-2 (ODC-By 1.0) và phụ đề [OpenSubtitles](http://www.opensubtitles.org/) qua
+  [OPUS](https://opus.nlpl.eu); bảng theo giấy phép **CC BY-SA 4.0**.
 - Issue và pull request trước ngày 10/10/2026 nằm ở repo lưu trữ
   [ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
 
@@ -525,7 +528,9 @@ Ngó Sen has two typing modes, Gõ Sen (for fast typing, browsers and Electron a
 Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by [@nguyen10t2](https://github.com/nguyen10t2),
 ported from the original Go [bamboo-core](https://github.com/BambooEngine/bamboo-core) by
 [@t1ld3x](https://github.com/t1ld3x). Both projects are MIT licensed. The core's English word list comes from
-[SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
+[SCOWL](https://wordlist.aspell.net) by Kevin Atkinson. The table behind Đoán dấu holds word-sequence counts
+made by [Tim Sen](https://github.com/ngosen/timsen) from Vietnamese Wikipedia, FineWeb-2 and [OpenSubtitles](http://www.opensubtitles.org/)
+(via [OPUS](https://opus.nlpl.eu)), licensed CC BY-SA 4.0.
 
 It includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to change the tone
 mark of a selected word. A convert hotkey turns selected TCVN3 or VNI text into the chosen charset, Unicode by default.

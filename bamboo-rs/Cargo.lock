@@ -167,7 +167,7 @@ dependencies = [
 [[package]]
 name = "timsen"
 version = "0.1.0"
-source = "git+https://github.com/ngosen/timsen?rev=5409844ec5b32ae07179f31ac44a878076ad26ed#5409844ec5b32ae07179f31ac44a878076ad26ed"
+source = "git+https://github.com/ngosen/timsen?rev=1b82f92ec4a0696f48dde882c2cd3b0674fa9d5c#1b82f92ec4a0696f48dde882c2cd3b0674fa9d5c"
 
 [[package]]
 name = "unicode-ident"

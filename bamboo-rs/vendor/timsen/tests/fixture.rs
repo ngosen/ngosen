@@ -3,7 +3,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use timsen::{Dictionary, Personal, Table, ToneStyle, Typing};
+use timsen::{Dictionary, Nearby, Personal, Table, ToneStyle, Typing};
 
 fn fixture(name: &str) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -200,7 +200,7 @@ fn fixes_unknown_syllables_exactly_like_research_typo() {
         match (want, typing.fix(i, ended)) {
             ("-", None) => {}
             (want, Some(fix)) => {
-                assert_eq!(fix.plain, want, "{line}");
+                assert_eq!(fix.word, want, "{line}");
                 let margin: f64 = margin.parse().unwrap();
                 assert!(
                     (fix.margin - margin).abs() < 1e-9,
@@ -223,5 +223,61 @@ fn a_known_or_marked_syllable_is_never_a_fix_target() {
     assert_eq!(typing.fix(0, true), None, "known");
     assert_eq!(typing.fix(1, true), None, "typed with marks");
     assert_eq!(typing.fix(3, true), None, "past the run");
-    assert_eq!(typing.fix(2, true).unwrap().plain, "phim");
+    assert_eq!(typing.fix(2, true).unwrap().word, "phim");
+}
+
+#[test]
+fn fixes_to_nearby_words_exactly_like_research_telex_typo() {
+    let t = table();
+    let fixes = std::fs::read_to_string(fixture("tiny.nearby")).unwrap();
+    assert!(fixes.lines().count() >= 8);
+    for line in fixes.lines() {
+        let [before, shown, nearby, want, margin] = line.split('\t').collect::<Vec<_>>()[..] else {
+            panic!("bad line: {line}");
+        };
+        let mut typing = Typing::new(&t);
+        for w in before.split(' ').filter(|w| !w.is_empty()) {
+            // Both readings the same: the word is context as typed, as the research takes it.
+            typing.push_either(w, w);
+        }
+        typing.push(shown);
+        let nearby: Vec<Nearby> = (nearby.split(' '))
+            .map(|n| {
+                let (word, cost) = n.rsplit_once(':').unwrap();
+                let cost = cost.parse().unwrap();
+                Nearby { word, cost }
+            })
+            .collect();
+        match (want, typing.fix_nearby(typing.len() - 1, false, &nearby)) {
+            ("-", None) => {}
+            (want, Some(fix)) => {
+                assert_eq!(fix.word, want, "{line}");
+                let margin: f64 = margin.parse().unwrap();
+                assert!(
+                    (fix.margin - margin).abs() < 1e-9,
+                    "{line}: margin {}",
+                    fix.margin
+                );
+            }
+            (want, None) => panic!("{line}: no fix, want {want}"),
+        }
+    }
+}
+
+#[test]
+fn a_known_syllable_or_one_past_the_run_takes_no_nearby_word() {
+    let t = table();
+    let mut typing = Typing::new(&t);
+    for w in ["toi", "gõ", "phsifm"] {
+        typing.push(w);
+    }
+    let nearby = [Nearby {
+        word: "phím",
+        cost: 1.0,
+    }];
+    assert_eq!(typing.fix_nearby(0, false, &nearby), None, "known");
+    assert_eq!(typing.fix_nearby(1, false, &nearby), None, "known, marked");
+    assert_eq!(typing.fix_nearby(3, false, &nearby), None, "past the run");
+    assert_eq!(typing.fix_nearby(2, false, &[]), None, "nothing nearby");
+    assert_eq!(typing.fix_nearby(2, false, &nearby).unwrap().word, "phím");
 }

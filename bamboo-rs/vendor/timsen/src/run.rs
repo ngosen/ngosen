@@ -1,7 +1,7 @@
 //! What an input method changes in the field when a word ends: the run as it is shown, against the
 //! run as it is guessed.
 
-use crate::{ToneStyle, Typing, tone};
+use crate::{Fix, Nearby, ToneStyle, Typing, tone};
 
 /// One change to the field: syllables `first..first + old.len()` of the run read `old` and become
 /// `new`, as long. The input method checks `old` against the field before it deletes anything, and
@@ -117,13 +117,32 @@ impl<'t> Run<'t> {
     /// A word that ended, shown as typed. A syllable nothing knows is fixed now, from the words
     /// before it, when a fix wins by the margin; a later [`Run::change`] shows it.
     pub fn push(&mut self, syllable: &str) {
+        self.push_fixing(syllable, |typing, last| typing.fix(last, false));
+    }
+
+    /// Whether [`Run::push_nearby`] could fix `syllable`: fixing is on and nothing knows the
+    /// syllable. Finding the words near its keys costs the input method time, so it asks first.
+    pub fn may_fix(&self, syllable: &str) -> bool {
+        self.fix_margin.is_some() && !self.typing.knows(syllable)
+    }
+
+    /// [`Run::push`] for a word whose keys the input method also read with a slip in them: `nearby`
+    /// are the words that keys near the ones typed would have shown. A syllable nothing knows is
+    /// fixed to one of those ([`Typing::fix_nearby`]) and to nothing else.
+    pub fn push_nearby(&mut self, syllable: &str, nearby: &[Nearby<'_>]) {
+        self.push_fixing(syllable, |typing, last| {
+            typing.fix_nearby(last, false, nearby)
+        });
+    }
+
+    fn push_fixing(&mut self, syllable: &str, fix: impl Fn(&Typing<'t>, usize) -> Option<Fix>) {
         self.typing.push(syllable);
         let mut fixed = None;
         let mut given = syllable.to_string();
         let last = self.typing.len() - 1;
         let fix = (self.fix_margin)
-            .and_then(|m| self.typing.fix(last, false).filter(|f| f.margin >= m))
-            .and_then(|f| fix_case(syllable, &f.plain));
+            .and_then(|m| fix(&self.typing, last).filter(|f| f.margin >= m))
+            .and_then(|f| fix_case(syllable, &f.word));
         if let Some(fix) = fix {
             given = fix;
             self.typing.pop();
@@ -764,5 +783,87 @@ mod tests {
             "phmí",
             "the learned word, not fixed to phím"
         );
+    }
+
+    /// Pushes a word with the words near its keys and applies the change, as an input method would.
+    fn type_nearby(run: &mut Run, word: &str, nearby: &[(&str, f64)]) {
+        let nearby: Vec<Nearby> = (nearby.iter())
+            .map(|&(word, cost)| Nearby { word, cost })
+            .collect();
+        run.push_nearby(word, &nearby);
+        if let Some(c) = run.change(false, Reach::Run, ToneStyle::New) {
+            assert!(run.apply(&c));
+        }
+    }
+
+    #[test]
+    fn a_word_near_the_keys_typed_replaces_a_syllable_nothing_knows() {
+        let t = table();
+        let mut run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+        type_words(&mut run, &["tôi", "gõ"], Reach::Run);
+        assert!(run.may_fix("Phsifm"));
+        type_nearby(&mut run, "Phsifm", &[("phím", 1.0), ("nhanh", 2.5)]);
+        assert_eq!(run.shown()[2], "Phím");
+        assert_eq!(run.last_fix(), Some(2));
+        assert!(run.undo_fix());
+        let back = run.change(false, Reach::Run, ToneStyle::New).unwrap();
+        assert_eq!(back.new, strings(&["Phsifm"]));
+    }
+
+    #[test]
+    fn a_nearby_word_that_costs_too_much_is_not_taken() {
+        let t = table();
+        // On the fixture, phím after "tôi gõ" wins by 17.85 before its cost, 2 for each unit.
+        for (cost, shown) in [(6.5, "phím"), (7.0, "phsifm")] {
+            let mut run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+            type_words(&mut run, &["tôi", "gõ"], Reach::Run);
+            type_nearby(&mut run, "phsifm", &[("phím", cost)]);
+            assert_eq!(run.shown()[2], shown, "cost {cost}");
+        }
+    }
+
+    #[test]
+    fn a_syllable_given_nearby_words_is_fixed_to_none_but_those() {
+        let t = table();
+        let mut run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+        type_words(&mut run, &["tôi", "gõ"], Reach::Run);
+        // One edit from phim, which a plain push fixes it to.
+        type_nearby(&mut run, "phmi", &[]);
+        type_nearby(
+            &mut run,
+            "phmi",
+            &[("xyzzy", 1.0), ("phmí", 1.0), ("phmi", 1.0)],
+        );
+        assert_eq!(run.shown()[2..], strings(&["phmi", "phmi"]));
+        assert_eq!(run.last_fix(), None);
+    }
+
+    #[test]
+    fn nearby_words_that_come_to_one_spelling_do_not_compete() {
+        let t = table();
+        let mut run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+        type_words(&mut run, &["tôi", "gõ"], Reach::Run);
+        type_nearby(
+            &mut run,
+            "phsifm",
+            &[("phim", 1.0), ("phím", 1.0), ("PHÍM", 3.0)],
+        );
+        assert_eq!(run.shown()[2], "phím");
+    }
+
+    #[test]
+    fn a_word_something_knows_takes_no_nearby_word() {
+        let mut d = crate::Dictionary::new(std::sync::Arc::new(table()));
+        d.learn(&[Some("phsím")]);
+        let mut run = Run::new(d.typing(), 0.99).fixing(Some(FIX_MARGIN));
+        type_words(&mut run, &["tôi", "gõ"], Reach::Run);
+        for known in ["nhanh", "Gỗ", "go", "phsím"] {
+            assert!(!run.may_fix(known), "{known}");
+            type_nearby(&mut run, known, &[("phím", 1.0)]);
+            assert_eq!(run.last_fix(), None, "{known}");
+        }
+        assert!(run.may_fix("phsifm"));
+        let off = Run::new(d.typing(), 0.99);
+        assert!(!off.may_fix("phsifm"), "fixing is off");
     }
 }

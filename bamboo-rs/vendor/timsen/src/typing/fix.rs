@@ -1,20 +1,44 @@
-//! Fixing a typed syllable the table does not know (`khogn`) to a known form one edit away, as
-//! `research.typo` does.
+//! Fixing a typed syllable the table does not know: to a known form one edit away (`khogn`), as
+//! `research.typo` does, or to a word the input method found near the keys typed (`mguoifw`), as
+//! `research.telex_typo` does.
 
 use super::{EOS, START, Typing, UNK};
+use crate::tone;
 
 /// How far the best fix must score above keeping the word, or the next fix, before it is made.
 pub const FIX_MARGIN: f64 = 4.0;
 
+/// What one unit of a nearby word's cost takes off its score.
+const NEARBY_SCALE: f64 = 2.0;
+
+/// The least share of the table's words a nearby word must be: 1,000 occurrences in the released
+/// small table. A table also holds the typos of its corpus, and a typo must not be a fix.
+const NEARBY_SHARE: f64 = 1.87e-6;
+
 /// The longest syllable that is a fix target, in letters.
 const MAX_TARGET: usize = 32;
 
-/// A known form one edit away from an unknown syllable, without marks, and how far it scores above
-/// keeping the word or the next form.
+/// The word to show for an unknown syllable, and how far it scores above keeping the syllable or
+/// the next word. [`Typing::fix`] gives a form without marks, [`Typing::fix_nearby`] a spelling.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Fix {
-    pub plain: String,
+    pub word: String,
     pub margin: f64,
+}
+
+/// A word that keys near the ones typed would have made, and how far those keys are from them: 1
+/// for a slip made easily (the key beside, two keys in the wrong order), more for an unlikely one.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Nearby<'a> {
+    pub word: &'a str,
+    pub cost: f64,
+}
+
+/// A candidate fix: the word, the ids it may stand for, and what its score loses.
+struct Candidate {
+    word: String,
+    ids: Vec<u32>,
+    penalty: f64,
 }
 
 /// Every string one edit away: a letter replaced, removed or added, or two neighbours swapped.
@@ -57,32 +81,104 @@ impl Typing<'_> {
             return None;
         }
         let typed = typed.to_ascii_lowercase();
-        let cands: Vec<(String, Vec<u32>)> = (edits(&typed).into_iter())
-            .filter_map(|c| self.src.options(&c).map(|o| (c, o)))
+        let cands = (edits(&typed).into_iter())
+            .filter_map(|word| {
+                let ids = self.src.options(&word)?;
+                Some(Candidate {
+                    word,
+                    ids,
+                    penalty: 0.0,
+                })
+            })
             .collect();
-        if cands.is_empty() {
+        self.best_fix(i, ended, cands, false)
+    }
+
+    /// The fix for syllable `i` among `nearby`, the words the input method would have shown for
+    /// keys near the ones typed, when neither the table nor the personal dictionary knows the
+    /// syllable; `None` otherwise, or when the table has seen none of the words often enough. Each
+    /// word is scored like a candidate of [`Typing::fix`], less its cost, and the fix is its best
+    /// spelling: the word itself when it has marks.
+    pub fn fix_nearby(&self, i: usize, ended: bool, nearby: &[Nearby<'_>]) -> Option<Fix> {
+        if self.opts.get(i)? != &[UNK] || self.typed[i].len() > MAX_TARGET {
             return None;
         }
+        let cands = (nearby.iter())
+            .filter_map(|near| {
+                let word = tone::to_new(&near.word.to_lowercase());
+                let ids = self.common(&word)?;
+                Some(Candidate {
+                    word,
+                    ids,
+                    penalty: NEARBY_SCALE * near.cost,
+                })
+            })
+            .collect();
+        self.best_fix(i, ended, cands, true)
+    }
+
+    /// Whether the table or the personal dictionary knows a syllable, so that it is no fix target.
+    pub(crate) fn knows(&self, syllable: &str) -> bool {
+        let plain = syllable.to_lowercase();
+        if tone::strip(&plain) == plain {
+            self.src.options(&plain).is_some()
+        } else {
+            self.id_of(syllable) != UNK
+        }
+    }
+
+    /// The table's ids for a nearby word, every spelling for one without marks, or `None` when
+    /// the table does not know it or saw each of them too rarely.
+    fn common(&self, word: &str) -> Option<Vec<u32>> {
+        let table = self.src.table();
+        let plain = tone::strip(word);
+        let mut ids = table.options(&plain)?;
+        let ids: Vec<u32> = if plain == word {
+            ids.collect()
+        } else {
+            vec![ids.find(|&id| table.word(id) == word)?]
+        };
+        let seen = ids.iter().map(|&id| table.uni(id)).fold(0.0, f64::max);
+        (seen >= NEARBY_SHARE * table.total()).then_some(ids)
+    }
+
+    /// The best of `cands` at syllable `i`. With `spelled`, a candidate counts as its best
+    /// spelling, so two that come to the same spelling are one.
+    fn best_fix(&self, i: usize, ended: bool, cands: Vec<Candidate>, spelled: bool) -> Option<Fix> {
         let picks = self.best_path(ended);
         let seq: Vec<u32> = (0..self.opts.len())
             .map(|k| self.opts[k][picks[k]])
             .collect();
+        let mut rated: Vec<(String, f64)> = Vec::new();
+        for cand in cands {
+            // Strictly greater keeps the first best, as numpy's argmax does.
+            let (mut best, mut score) = (cand.ids[0], f64::NEG_INFINITY);
+            for &id in &cand.ids {
+                let s = self.local(&seq, i, id, ended);
+                if s > score {
+                    (best, score) = (id, s);
+                }
+            }
+            let word = if spelled {
+                self.src.word(best).to_string()
+            } else {
+                cand.word
+            };
+            rated.push((word, score - cand.penalty));
+        }
+        // By word, its best score first: each word keeps that score, and the first of equal
+        // scores wins in the sorted order of the words.
+        rated.sort_by(|a, b| a.0.cmp(&b.0).then(b.1.total_cmp(&a.1)));
+        rated.dedup_by(|later, first| later.0 == first.0);
+        let best = (0..rated.len()).reduce(|b, k| if rated[k].1 > rated[b].1 { k } else { b })?;
         let keep = self.local(&seq, i, UNK, ended);
-        let scores: Vec<f64> = (cands.iter())
-            .map(|(_, ids)| {
-                (ids.iter().map(|&id| self.local(&seq, i, id, ended)))
-                    .fold(f64::NEG_INFINITY, f64::max)
-            })
-            .collect();
-        // The first of equal scores wins, in the sorted order of the candidates.
-        let best = (0..scores.len()).fold(0, |b, k| if scores[k] > scores[b] { k } else { b });
-        let runner = (0..scores.len())
+        let runner = (0..rated.len())
             .filter(|&k| k != best)
-            .map(|k| scores[k])
+            .map(|k| rated[k].1)
             .fold(keep, f64::max);
         Some(Fix {
-            plain: cands[best].0.clone(),
-            margin: scores[best] - runner,
+            margin: rated[best].1 - runner,
+            word: rated.swap_remove(best).0,
         })
     }
 

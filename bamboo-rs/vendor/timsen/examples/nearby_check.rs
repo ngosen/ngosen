@@ -4,8 +4,9 @@
 //! usage: cargo run --release --example nearby_check TABLE FIXES
 //! FIXES: BEFORE, SHOWN, NEARBY, FIX, MARGIN per line. BEFORE are the words before the one shown,
 //! as typed; NEARBY is `WORD:COST` for each word near its keys; FIX and MARGIN are `-` when no
-//! nearby word is common enough. Prints how many decisions agree, how many fall on the other side
-//! of `FIX_MARGIN`, and the largest difference in margin.
+//! nearby word is common enough. A line of six columns has the word after the one shown before
+//! FIX, and its decision is made with that word typed too. Prints how many decisions agree, how
+//! many fall on the other side of `FIX_MARGIN`, and the largest difference in margin.
 
 use timsen::{FIX_MARGIN, Nearby, Table, Typing};
 
@@ -20,7 +21,9 @@ fn main() {
     let (mut lines, mut same, mut other_side, mut made) = (0, 0, 0, 0);
     let mut widest = 0.0f64;
     for line in text.lines() {
-        let [before, shown, nearby, want, margin] = line.split('\t').collect::<Vec<_>>()[..] else {
+        let mut cols: Vec<&str> = line.split('\t').collect();
+        let then = (cols.len() == 6).then(|| cols.remove(3));
+        let [before, shown, nearby, want, margin] = cols[..] else {
             panic!("bad line: {line}");
         };
         let mut typing = Typing::new(&t);
@@ -29,6 +32,10 @@ fn main() {
             typing.push_either(w, w);
         }
         typing.push(shown);
+        let at = typing.len() - 1;
+        if let Some(then) = then {
+            typing.push_either(then, then);
+        }
         let nearby: Vec<Nearby> = (nearby.split(' ').filter(|n| !n.is_empty()))
             .map(|n| {
                 let (word, cost) = n.rsplit_once(':').expect("WORD:COST");
@@ -38,7 +45,7 @@ fn main() {
                 }
             })
             .collect();
-        let got = typing.fix_nearby(typing.len() - 1, false, &nearby);
+        let got = typing.fix_nearby(at, false, &nearby);
         lines += 1;
         let agrees = match (&got, margin.parse::<f64>().ok()) {
             (None, None) => want == "-",

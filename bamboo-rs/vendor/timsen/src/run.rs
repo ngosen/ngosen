@@ -72,6 +72,12 @@ enum Pushed {
     Kept(String),
 }
 
+/// A syllable left as typed that the next word may still fix, with the words near its keys.
+struct Waiting {
+    at: usize,
+    nearby: Vec<(String, f64)>,
+}
+
 /// A run on its way into a field. Each syllable is shown as typed until a [`Change`] says otherwise;
 /// later syllables can change earlier ones, several at once.
 pub struct Run<'t> {
@@ -85,6 +91,8 @@ pub struct Run<'t> {
     fixed: Vec<Option<String>>,
     raw_confidence: f64,
     fix_margin: Option<f64>,
+    fix_again: bool,
+    waiting: Option<Waiting>,
 }
 
 impl<'t> Run<'t> {
@@ -100,6 +108,8 @@ impl<'t> Run<'t> {
             fixed: Vec::new(),
             raw_confidence,
             fix_margin: None,
+            fix_again: false,
+            waiting: None,
         };
         while !run.typing.is_empty() {
             run.typing.pop();
@@ -111,6 +121,14 @@ impl<'t> Run<'t> {
     /// [`FIX_MARGIN`] is the margin measured to be safe.
     pub fn fixing(mut self, margin: Option<f64>) -> Run<'t> {
         self.fix_margin = margin;
+        self
+    }
+
+    /// Whether a syllable [`Run::push_nearby`] left as typed is decided once more when the word
+    /// after it ends, with that word as context too. Such a fix changes the word before the last,
+    /// so it is for a field whose earlier words can change ([`Reach::Run`]). Off by default.
+    pub fn fixing_again(mut self, again: bool) -> Run<'t> {
+        self.fix_again = again;
         self
     }
 
@@ -133,6 +151,56 @@ impl<'t> Run<'t> {
         self.push_fixing(syllable, |typing, last| {
             typing.fix_nearby(last, false, nearby)
         });
+        let at = self.shown.len() - 1;
+        if self.fix_again && self.fixed[at].is_none() && !nearby.is_empty() {
+            let nearby = (nearby.iter())
+                .map(|near| (near.word.to_string(), near.cost))
+                .collect();
+            self.waiting = Some(Waiting { at, nearby });
+        }
+    }
+
+    /// Decides the syllable before the one just pushed once more, when it waits for that.
+    fn decide_waiting(&mut self) {
+        let Some(Waiting { at, nearby }) = self.waiting.take() else {
+            return;
+        };
+        let Some(Pushed::Guessed(typed)) = self.pushed.get(at) else {
+            return;
+        };
+        if at + 2 != self.shown.len() {
+            return;
+        }
+        let typed = typed.clone();
+        let nearby: Vec<Nearby> = (nearby.iter())
+            .map(|(word, cost)| Nearby { word, cost: *cost })
+            .collect();
+        let i = self.context.len() + at;
+        let fix = (self.fix_margin)
+            .and_then(|m| {
+                let fix = self.typing.fix_nearby(i, false, &nearby);
+                fix.filter(|f| f.margin >= m)
+            })
+            .and_then(|f| fix_case(&typed, &f.word));
+        if let Some(fix) = fix {
+            self.fixed[at] = Some(typed);
+            self.pushed[at] = Pushed::Guessed(fix);
+            self.retype_from(at);
+        }
+    }
+
+    /// Puts syllables `i..` into the typing again, after one of them changed how it goes in.
+    fn retype_from(&mut self, i: usize) {
+        while self.typing.len() > self.context.len() + i {
+            self.typing.pop();
+        }
+        for pushed in &self.pushed[i..] {
+            match pushed {
+                Pushed::Guessed(text) => self.typing.push(text),
+                Pushed::Either(interpreted, raw) => self.typing.push_either(interpreted, raw),
+                Pushed::Kept(text) => self.typing.push_context(text),
+            }
+        }
     }
 
     fn push_fixing(&mut self, syllable: &str, fix: impl Fn(&Typing<'t>, usize) -> Option<Fix>) {
@@ -153,6 +221,7 @@ impl<'t> Run<'t> {
         self.readings.push(None);
         self.pushed.push(Pushed::Guessed(given));
         self.fixed.push(fixed);
+        self.decide_waiting();
         self.decide_leaving();
     }
 
@@ -164,6 +233,7 @@ impl<'t> Run<'t> {
         self.readings.push(None);
         self.pushed.push(Pushed::Kept(syllable.to_string()));
         self.fixed.push(None);
+        self.decide_waiting();
         self.decide_leaving();
     }
 
@@ -179,6 +249,7 @@ impl<'t> Run<'t> {
         self.pushed
             .push(Pushed::Either(interpreted.to_string(), raw.to_string()));
         self.fixed.push(None);
+        self.decide_waiting();
         self.decide_leaving();
     }
 
@@ -198,16 +269,7 @@ impl<'t> Run<'t> {
         };
         let typed = self.fixed[i].take().unwrap_or_default();
         self.pushed[i] = Pushed::Kept(typed);
-        while self.typing.len() > self.context.len() + i {
-            self.typing.pop();
-        }
-        for pushed in &self.pushed[i..] {
-            match pushed {
-                Pushed::Guessed(text) => self.typing.push(text),
-                Pushed::Either(interpreted, raw) => self.typing.push_either(interpreted, raw),
-                Pushed::Kept(text) => self.typing.push_context(text),
-            }
-        }
+        self.retype_from(i);
         true
     }
 
@@ -281,6 +343,8 @@ impl<'t> Run<'t> {
             fixed: Vec::new(),
             raw_confidence: self.raw_confidence,
             fix_margin: self.fix_margin,
+            fix_again: self.fix_again,
+            waiting: None,
         }
     }
 
@@ -865,5 +929,85 @@ mod tests {
         assert!(run.may_fix("phsifm"));
         let off = Run::new(d.typing(), 0.99);
         assert!(!off.may_fix("phsifm"), "fixing is off");
+    }
+
+    // On the fixture, người for ngwoif at the start of a run wins by 2 at its end and by 16.67
+    // once "ta" follows.
+    const SHORT_OF_THE_MARGIN: [(&str, f64); 2] = [("người", 1.0), ("tôi", 2.0)];
+
+    #[test]
+    fn a_syllable_short_of_the_margin_is_fixed_once_the_next_word_ends() {
+        let t = table();
+        for (again, shown) in [(true, "Người"), (false, "Ngwoif")] {
+            let run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+            let mut run = run.fixing_again(again);
+            type_nearby(&mut run, "Ngwoif", &SHORT_OF_THE_MARGIN);
+            assert_eq!(run.shown(), strings(&["Ngwoif"]), "not at its end");
+            run.push("ta");
+            let change = run.change(false, Reach::Run, ToneStyle::New);
+            assert_eq!(change.is_some(), again);
+            if let Some(change) = change {
+                assert_eq!((change.first, &change.new), (0, &strings(&["Người"])));
+                assert!(run.apply(&change));
+            }
+            assert_eq!(run.shown(), strings(&[shown, "ta"]));
+            assert_eq!(run.last_fix(), again.then_some(0));
+        }
+    }
+
+    #[test]
+    fn a_fix_made_after_the_next_word_is_undone_like_any_other() {
+        let t = table();
+        let run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+        let mut run = run.fixing_again(true);
+        type_nearby(&mut run, "ngwoif", &SHORT_OF_THE_MARGIN);
+        type_words(&mut run, &["ta", "co"], Reach::Run);
+        assert_eq!(run.shown(), strings(&["người", "ta", "có"]));
+        assert!(run.undo_fix());
+        let back = run.change(false, Reach::Run, ToneStyle::New).unwrap();
+        assert_eq!((back.first, &back.new), (0, &strings(&["ngwoif"])));
+        assert!(run.apply(&back));
+        type_words(&mut run, &["go"], Reach::Run);
+        assert_eq!(run.shown()[0], "ngwoif", "kept as typed for good");
+    }
+
+    #[test]
+    fn only_the_word_right_after_decides_a_waiting_syllable() {
+        let t = table();
+        let fixing = |t| Run::new(Typing::new(t), 0.99).fixing(Some(FIX_MARGIN));
+        // The syllable was taken back before the next word: what replaces it does not wait.
+        let mut run = fixing(&t).fixing_again(true);
+        type_nearby(&mut run, "ngwoif", &SHORT_OF_THE_MARGIN);
+        run.pop();
+        type_words(&mut run, &["xyzzy", "ta"], Reach::Run);
+        assert_eq!(run.shown(), strings(&["xyzzy", "ta"]));
+        // The word after did not decide it, so the one after that does not either.
+        let mut run = fixing(&t).fixing_again(true);
+        type_nearby(&mut run, "ngwoif", &SHORT_OF_THE_MARGIN);
+        type_words(&mut run, &["xyzzy", "ta"], Reach::Run);
+        assert_eq!(run.shown()[0], "ngwoif");
+        // Taking the word after back and typing another does not ask again.
+        let mut run = fixing(&t).fixing_again(true);
+        type_nearby(&mut run, "ngwoif", &SHORT_OF_THE_MARGIN);
+        run.push("xyzzy");
+        run.pop();
+        type_words(&mut run, &["ta"], Reach::Run);
+        assert_eq!(run.shown(), strings(&["ngwoif", "ta"]));
+    }
+
+    #[test]
+    fn a_waiting_syllable_is_decided_whichever_way_the_next_word_goes_in() {
+        let t = table();
+        for way in 0..3 {
+            let run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+            let mut run = run.fixing_again(true);
+            type_nearby(&mut run, "ngwoif", &SHORT_OF_THE_MARGIN);
+            match way {
+                0 => run.push_either("ta", "ta"),
+                1 => run.push_as_typed("ta"),
+                _ => run.push_nearby("ta", &[]),
+            }
+            assert_eq!(run.last_fix(), Some(0), "way {way}");
+        }
     }
 }

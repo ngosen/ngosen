@@ -37,7 +37,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   các chữ viết tắt, chữ đang được giữ nguyên đứng đầu kèm nút **Bung lại**, và công tắc **Bung chữ viết tắt
   khi chat** để tắt. Không bung trong terminal, ô mật khẩu, ô địa chỉ, và ở kiểu gõ gạch chân trong app
   không báo chữ cho bộ gõ.
-  (#1039, #1040, #1042, #1043, #1045, #1046, #1048)
+  (#1039, #1040, #1042, #1043, #1045, #1046, #1048, #1049)
 
 ### Sửa
 

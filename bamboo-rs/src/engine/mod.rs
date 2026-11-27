@@ -1266,6 +1266,7 @@ impl BambooEngine {
             if !self.private_field
                 && let Some(d) = &mut self.diacritics
             {
+                d.erased_back();
                 d.reset();
             }
             return false;
@@ -1421,6 +1422,9 @@ impl BambooEngine {
             if !self.private_field
                 && let Some(d) = &mut self.diacritics
             {
+                if key_val == KEY_BACKSPACE && !has_preedit {
+                    d.erased_back();
+                }
                 d.ended_at_key(Self::types_on(key_val, state));
             }
             return false;
@@ -1548,8 +1552,6 @@ impl BambooEngine {
         }
     }
 
-    /// Whether words without marks that nothing knows count here toward being learned as meant.
-    /// A command line's are commands and file names.
     /// A key the front end keeps to itself typed on from the last word committed, as Enter or Tab
     /// after a space does.
     pub fn typed_on(&mut self) {
@@ -1560,6 +1562,15 @@ impl BambooEngine {
         }
     }
 
+    /// Backspace with a modifier, which the front end keeps to itself, erases back from the cursor.
+    pub fn erased_back(&mut self) {
+        if let Some(d) = &mut self.diacritics {
+            d.erased_back();
+        }
+    }
+
+    /// Whether words without marks that nothing knows count here toward being learned as meant.
+    /// A command line's are commands and file names.
     pub fn set_counting_plain_words(&mut self, on: bool) {
         if let Some(d) = &mut self.diacritics {
             d.set_counting_plain(on);

@@ -507,6 +507,12 @@ namespace {
             check(learned, "Đoán dấu: Enter after a space leaves a plain word alone" + name, "nothing");
             typeGuessingInApp(reports, mode, "khum \tkhum \tkhum \t", {.fixesTypos = true, .learned = &learned});
             check(learned, "Đoán dấu: Tab after a space leaves a plain word alone" + name, "nothing");
+            typeGuessingInApp(makeField("wayland", false), mode, "khum.\b\b\b\b\bkhum.\b\b\b\b\bkhum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word erased where the field shows nothing was not left alone" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum.\x17khum.\x17khum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word erased with Ctrl+Backspace was not left alone" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum.\b\b\b\b\bkhum.\b\b\b\b\bkhum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word erased letter by letter was not left alone" + name, "learned");
             typeGuessingInApp(makeField("wayland", true, "org.kde.konsole"), mode, "khum. khum. khum.", {.fixesTypos = true, .inTerminals = true, .learned = &learned});
             check(!learned, "Đoán dấu: never learns a plain word on a command line" + name, "learned");
             if (mode == ngosen::Mode::Sen) {

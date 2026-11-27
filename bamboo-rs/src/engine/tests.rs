@@ -3617,8 +3617,8 @@ fn a_word_reopened_and_ended_again_is_left_alone_once() {
     let mut field = Vec::new();
     type_into(&mut e, &mut field, &[("khum", '.')]);
     for _ in 0..2 {
-        // Backspace right after the full stop: the front end deletes it and reopens the word.
-        e.process_key_event(KEY_BACKSPACE, 0);
+        // Backspace right after the full stop: the front end deletes it and reopens the word,
+        // without the key reaching the engine.
         e.reopen_committed("khum");
         e.process_key_event('.' as u32, 0);
         commit_into(&mut e, &mut field);
@@ -3661,4 +3661,24 @@ fn only_the_word_that_just_ended_is_taken_back() {
     d.taken_back("khum");
     type_alone(&mut d, "khum", 2);
     assert!(knows(&dictionary, "khum"));
+}
+
+#[test]
+fn a_word_erased_right_after_it_ended_was_not_left_alone() {
+    // With macros on the engine handles Backspace itself, otherwise it forwards the key.
+    for macros in [false, true] {
+        let dictionary = shared_dictionary();
+        let mut e = engine_on(&dictionary);
+        e.set_counting_plain_words(true);
+        e.macro_enabled = macros;
+        let mut field = Vec::new();
+        for _ in 0..2 {
+            type_into(&mut e, &mut field, &[("khum", '.')]);
+            e.process_key_event(KEY_BACKSPACE, 0);
+        }
+        type_into(&mut e, &mut field, &[("khum", '.')]);
+        assert!(dictionary.lock().unwrap().is_empty(), "{macros}");
+        type_into(&mut e, &mut field, &[("khum", '.'); 2]);
+        assert!(knows(&dictionary, "khum"), "{macros}");
+    }
 }

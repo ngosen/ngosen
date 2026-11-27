@@ -312,6 +312,8 @@ namespace ngosen {
             hasHistory_ = false;
             if ((currentSym == ngosen::key::Tab || currentSym == ngosen::key::KP_Tab) && !keyEvent.hasModifier())
                 EngineTypedOn(bambooEngine_.handle());
+            if (ngosen::key::isBackspace(currentSym) && oldPreBuffer_.empty())
+                EngineErasedBack(bambooEngine_.handle());
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             noteVimSpecialKey(keyEvent, currentSym);

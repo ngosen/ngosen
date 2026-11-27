@@ -454,8 +454,16 @@ impl Diacritics {
 
     /// The front end took `word` back from the field to type on, so it was not left alone.
     pub fn taken_back(&mut self, word: &str) {
-        if self.counted_last.take().as_deref() == Some(word) {
-            self.learning.uncount(word);
+        if self.counted_last.as_deref() == Some(word) {
+            self.erased_back();
+        }
+    }
+
+    /// Backspace came before any other word: it may be erasing the word that was just counted as
+    /// left alone, and an app that shows none of its text cannot tell.
+    pub fn erased_back(&mut self) {
+        if let Some(word) = self.counted_last.take() {
+            self.learning.uncount(&word);
         }
     }
 

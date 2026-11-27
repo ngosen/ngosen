@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "ngosen-migration.h"
+#include "ngosen-wps-launcher.h"
 
 #include <fcitx-config/iniparser.h>
 #include <fcitx-utils/log.h>
@@ -18,6 +19,10 @@
 #endif
 
 #include <chrono>
+#include <cstdlib>
+#include <fstream>
+#include <iterator>
+#include <sstream>
 #include <thread>
 
 #include <unistd.h>
@@ -31,9 +36,51 @@ namespace {
         explicit NgoSenMigration(fcitx::Instance* instance) {
             copyUserFiles();
             updateProfile(instance->willTryReplace());
+            addWpsInputMethod();
         }
 
       private:
+        static std::string env(const char* name) {
+            const char* value = std::getenv(name);
+            return value ? value : "";
+        }
+
+        // Each login, so WPS installed after Ngó Sen, or with a package manager instead of
+        // install.sh, still types.
+        static void addWpsInputMethod() {
+            if (!ngosen::wantsWpsInputMethod(env("XDG_CURRENT_DESKTOP"), env("XDG_SESSION_TYPE")))
+                return;
+            const std::filesystem::path        home     = env("HOME");
+            const std::filesystem::path        dataHome = env("XDG_DATA_HOME").empty() ? home / ".local/share" : std::filesystem::path(env("XDG_DATA_HOME"));
+            std::vector<std::filesystem::path> systemDirs;
+            std::istringstream                 dataDirs(env("XDG_DATA_DIRS").empty() ? "/usr/local/share:/usr/share" : env("XDG_DATA_DIRS"));
+            for (std::string dir; std::getline(dataDirs, dir, ':');) {
+                if (!dir.empty())
+                    systemDirs.push_back(std::filesystem::path(dir) / "applications");
+            }
+            for (const auto& name : ngosen::addWpsLaunchers(systemDirs, dataHome / "applications")) {
+                FCITX_INFO() << "Ngó Sen: WPS launcher " << name << " now starts WPS with fcitx5";
+            }
+            addFlatpakInputMethod(dataHome);
+        }
+
+        static void addFlatpakInputMethod(const std::filesystem::path& dataHome) {
+            const std::string app = "com.wps.Office";
+            std::error_code   ec;
+            if (!std::filesystem::exists(dataHome / "flatpak/app" / app, ec) && !std::filesystem::exists("/var/lib/flatpak/app/" + app, ec))
+                return;
+            const auto    path = dataHome / "flatpak/overrides" / app;
+            std::ifstream in(path, std::ios::binary);
+            std::string   current((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+            const auto    updated = ngosen::flatpakOverrideWithInputMethod(current);
+            if (!updated)
+                return;
+            std::filesystem::create_directories(path.parent_path(), ec);
+            std::ofstream out(path, std::ios::binary | std::ios::trunc);
+            if (out << *updated)
+                FCITX_INFO() << "Ngó Sen: WPS Office from Flatpak now starts with fcitx5";
+        }
+
         static std::filesystem::path confDir() {
 #if NGOSEN_USE_MODERN_FCITX_API
             return fcitx::StandardPaths::global().userDirectory(fcitx::StandardPathsType::PkgConfig) / "conf";

@@ -27,6 +27,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   kế tiếp, có thêm từ đó làm căn cứ. Gõ `tooi nois tieegns vieetj` thì `tieegns` thành `tiếng` ngay khi
   `việt` gõ xong. Vì lúc đó chữ được sửa là từ đứng trước, việc này chỉ chạy ở ô nhập cho bộ gõ xem chữ đang
   có. Backspace ngay sau từ kế tiếp trả lại đúng chữ đã gõ và từ đó về sau giữ nguyên chữ ấy. (#1037)
+- Gõ tắt có sẵn chữ viết tắt khi chat: bật **Bung chữ viết tắt khi chat** ở trang Gõ tắt (đang tắt sẵn) thì
+  `ko` thành `không`, `dc` thành `được`, `cviec` thành `công việc`. Backspace ngay sau đó trả lại chữ đã gõ; chữ
+  nào bạn trả lại hai lần liền thì từ đó giữ nguyên như gõ. Trang Gõ tắt có danh sách các chữ viết tắt, chữ
+  đang được giữ nguyên đứng đầu, kèm nút **Bung lại**. Không bung trong terminal, ô mật khẩu và ô địa chỉ.
+  (#1039, #1040, #1042, #1043, #1045)
 
 ### Sửa
 

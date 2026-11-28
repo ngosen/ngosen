@@ -201,7 +201,7 @@ HINTS = {
         "tôi gỗ phím becomes tôi gõ phím once phím is typed: a mark key typed wrong is fixed "
         "when the words around it clearly want another word. It puts right about one such slip "
         "in four and now and then changes a word typed on purpose; Backspace right after puts it "
-        "back, and three times in a row keeps the word."
+        "back, and the third time keeps the word."
     ),
     "GuessInTerminals": N_(
         "A terminal does not let Ngó Sen read back what you typed, so guesses there are wrong more"

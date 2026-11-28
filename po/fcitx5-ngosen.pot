@@ -1522,7 +1522,7 @@ msgid "Type toi di hoc and get tôi đi học; a word can change again as the ne
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "tôi gỗ phím becomes tôi gõ phím once phím is typed: a mark key typed wrong is fixed when the words around it clearly want another word. It puts right about one such slip in four and now and then changes a word typed on purpose; Backspace right after puts it back, and three times in a row keeps the word."
+msgid "tôi gỗ phím becomes tôi gõ phím once phím is typed: a mark key typed wrong is fixed when the words around it clearly want another word. It puts right about one such slip in four and now and then changes a word typed on purpose; Backspace right after puts it back, and the third time keeps the word."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
@@ -2454,7 +2454,7 @@ msgid "Ngó Sen did not answer, so this may not show all it learned. Try again."
 msgstr ""
 
 #: settings-gui/core/learned.py
-msgid "It learns words with marks that Ngó Sen put into a field: words you typed with marks, and words you put back as typed with Backspace three times in a row after a wrong guess. Not words it guessed itself, and not text from macros."
+msgid "It learns words with marks that Ngó Sen put into a field: words you typed with marks, and words you put back as typed with Backspace three times after a wrong guess. Not words it guessed itself, and not text from macros."
 msgstr ""
 
 #: settings-gui/core/learned.py

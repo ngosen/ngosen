@@ -312,6 +312,13 @@ class GtkMacroPageTest(unittest.TestCase):
             window.Window(None, self.dbus).macros.switches["ChatShorthand"].get_active()
         )
 
+    def test_the_chat_group_says_how_to_turn_them_off_in_one_app(self):
+        self.assertIn("press ` then c", self.page.chat_group.get_description())
+        # Changed on the Keys page while this one stayed open.
+        self.dbus.values["ShortcutChatShorthand"] = "x"
+        self.page.refresh_status()
+        self.assertIn("press ` then x", self.page.chat_group.get_description())
+
     def test_the_chat_list_says_why_it_is_empty(self):
         self.assertEqual(
             self.page.chat_list.get_subtitle(),
@@ -561,9 +568,13 @@ class GtkShortcutsPageTest(unittest.TestCase):
 
     def test_dropping_a_mode_saves_the_order(self):
         self.assertTrue(self.page.move("Off", "Sen"))
-        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Teencode,Vim")
+        self.assertEqual(
+            self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Teencode,ChatShorthand,Vim"
+        )
         self.page.move("Sen", "Emoji")
-        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Teencode,Vim")
+        self.assertEqual(
+            self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Teencode,ChatShorthand,Vim"
+        )
 
     def test_show_page_opens_the_shortcuts_tab(self):
         self.window.show_page("keymap")

@@ -3035,3 +3035,11 @@ msgstr "Chữ viết tắt khi chat: bật"
 #: src/ngosen-engine.cpp
 msgid "Chat abbreviations: off"
 msgstr "Chữ viết tắt khi chat: tắt"
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Set a mode menu key and a chat abbreviations key on the Keys page to turn them off in one app."
+msgstr "Đặt phím mở menu chế độ và phím chữ viết tắt khi chat ở trang Phím tắt để tắt riêng cho một app."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "In the app you are typing in, press {menu} then {key} to turn them off or on for that app alone."
+msgstr "Ở app đang gõ, bấm {menu} rồi {key} để tắt hay bật riêng cho app đó."

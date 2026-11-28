@@ -72,6 +72,7 @@ class MacroPage:
 
     def _chat(self):
         group = Adw.PreferencesGroup(title=_("Chat abbreviations"))
+        self.chat_group = group
         group.add(self._switch("ChatShorthand", _("Expand chat abbreviations")))
         self.chat_list = Adw.ExpanderRow(title=_("The list"), use_markup=False)
         # The built-in entries are not settings to find.
@@ -133,6 +134,8 @@ class MacroPage:
             self._syncing = False
             self._apply_locks()
         show_status(self.status, page_status.macro_line(model) if model else "")
+        if model:
+            self.chat_group.set_description(chat_shorthand.app_hint(model.value_of))
         self._show_chat()
 
     def _on_switch(self, row, _param, key):

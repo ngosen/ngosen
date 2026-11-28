@@ -18,7 +18,7 @@ from i18n import _
 from ui_gtk.hotkey_button import HotkeyButton
 from ui_gtk.status_row import older_fcitx_group
 
-DEFAULT_ORDER = "Sen,Preedit,Emoji,Teencode,Off,Vim"
+DEFAULT_ORDER = "Sen,Preedit,Emoji,Teencode,ChatShorthand,Off,Vim"
 
 
 class ShortcutsPage:

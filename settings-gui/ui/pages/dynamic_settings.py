@@ -1027,7 +1027,7 @@ class DynamicSettingsPage(QWidget):
         # Get current order from config
         order_str = self.current_values.get(
             "ModeOrder",
-            "Sen,Preedit,Emoji,Teencode,Off,Vim",
+            "Sen,Preedit,Emoji,Teencode,ChatShorthand,Off,Vim",
         )
         # The addon renames old mode names before it hands the config out.
         order = list(dict.fromkeys(order_str.split(",")))

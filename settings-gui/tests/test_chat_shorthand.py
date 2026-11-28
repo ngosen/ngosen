@@ -44,6 +44,24 @@ class ListingTest(unittest.TestCase):
         self.assertEqual(chat_shorthand.kept_line(entries[2:]), "None is kept as typed.")
 
 
+class AppHintTest(unittest.TestCase):
+    def hint(self, **values):
+        return chat_shorthand.app_hint(
+            {"ModeMenuKey": {"0": "grave"}, "ShortcutChatShorthand": "c", **values}.get
+        )
+
+    def test_the_hint_names_the_keys(self):
+        self.assertIn("press ` then c", self.hint())
+
+    def test_without_a_key_it_points_at_the_keys_page(self):
+        for values in (
+            {"ModeMenuKey": {}},
+            {"ShortcutChatShorthand": ""},
+            {"ShowModeChatShorthand": "False"},
+        ):
+            self.assertIn("Keys page", self.hint(**values), values)
+
+
 class CallsTest(unittest.TestCase):
     def test_the_entries_come_from_the_running_ngosen(self):
         entries, why = ChatShorthand(ChatEngine(kept=["ko"])).entries()
@@ -132,6 +150,15 @@ class QtPageTest(unittest.TestCase):
             "ko gives không, dc gives được. Backspace right after the space gives back what you typed.",
             hints,
         )
+
+    def test_the_page_says_how_to_turn_them_off_in_one_app(self):
+        fake = FakeDBusHandler()
+        page = MacroEditorPage(fake)
+        self.assertIn("press ` then c", page.chat_app_hint.text())
+        # Changed on the Keys page while this one stayed open.
+        fake.values["ShortcutChatShorthand"] = "x"
+        page.refresh_status()
+        self.assertIn("press ` then x", page.chat_app_hint.text())
 
     def test_the_line_names_the_kept_keys(self):
         self.assertEqual(self.page(ChatEngine()).chat_line.text(), "None is kept as typed.")

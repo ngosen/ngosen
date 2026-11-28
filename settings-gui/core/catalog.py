@@ -97,6 +97,7 @@ SETTINGS_MAP = {
             "ShortcutPreedit",
             "ShortcutEmoji",
             "ShortcutTeencode",
+            "ShortcutChatShorthand",
             "ShortcutOff",
             "ShortcutVim",
         ],
@@ -266,6 +267,7 @@ MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutPreedit": "ShowModePreedit",
     "ShortcutEmoji": "ShowModeEmoji",
     "ShortcutTeencode": "ShowModeTeencode",
+    "ShortcutChatShorthand": "ShowModeChatShorthand",
     "ShortcutOff": "ShowModeOff",
     "ShortcutVim": "ShowModeVim",
 }
@@ -284,6 +286,7 @@ MODE_KEY_TO_INTERNAL_NAME = {
     "ShortcutPreedit": "Preedit",
     "ShortcutEmoji": "Emoji",
     "ShortcutTeencode": "Teencode",
+    "ShortcutChatShorthand": "ChatShorthand",
     "ShortcutOff": "Off",
     "ShortcutVim": "Vim",
 }

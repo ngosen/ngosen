@@ -7,6 +7,7 @@ from collections import namedtuple
 
 from i18n import _
 
+from core.hotkeys import pretty_format_hotkey_parts
 from core.ngosen_call import NO_REPLY, NOT_LOADED, NOT_RUNNING, TOO_OLD, CallError
 
 Entry = namedtuple("Entry", "key text kept")
@@ -29,6 +30,23 @@ def kept_line(entries):
     if not kept:
         return _("None is kept as typed.")
     return _("Kept as typed: {}.").format(", ".join(kept))
+
+
+def app_hint(value_of):
+    """How to turn the abbreviations off in one app, with the keys the user set."""
+    menu_keys = value_of("ModeMenuKey") or []
+    keys = list(menu_keys.values()) if isinstance(menu_keys, dict) else list(menu_keys)
+    menu = "+".join(pretty_format_hotkey_parts(keys[0])) if keys else ""
+    key = value_of("ShortcutChatShorthand")
+    if not menu or not key or str(value_of("ShowModeChatShorthand")).lower() == "false":
+        return _(
+            "Set a mode menu key and a chat abbreviations key on the Keys page to turn them off"
+            " in one app."
+        )
+    return _(
+        "In the app you are typing in, press {menu} then {key} to turn them off or on for that"
+        " app alone."
+    ).format(menu=menu, key=key)
 
 
 class ChatShorthand:

@@ -715,6 +715,20 @@
     {}
    ],
    [
+    "ShowModeChatShorthand",
+    "Boolean",
+    "Show chat abbreviations",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutChatShorthand",
+    "String",
+    "Shortcut for chat abbreviations",
+    "c",
+    {}
+   ],
+   [
     "ShowModeOff",
     "Boolean",
     "Show OFF",
@@ -760,7 +774,7 @@
     "ModeOrder",
     "String",
     "Mode Order",
-    "Sen,Preedit,Emoji,Teencode,Off,Vim",
+    "Sen,Preedit,Emoji,Teencode,ChatShorthand,Off,Vim",
     {}
    ],
    [

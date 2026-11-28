@@ -219,6 +219,10 @@ class MacroEditorPage(BaseEditorPage):
         self.cb_chat.toggled.connect(self._on_item_changed)
         self._hinted["ChatShorthand"] = with_hint_below(self.cb_chat, _(HINTS["ChatShorthand"]))[0]
         card.content_layout.addWidget(self._hinted["ChatShorthand"])
+        self.chat_app_hint = HintLabel("")
+        mute(self.chat_app_hint)
+        card.content_layout.addWidget(self.chat_app_hint)
+        self._show_app_hint()
         line = QHBoxLayout()
         self.chat_view_button = QPushButton(_("View the list"))
         self.chat_view_button.clicked.connect(self._toggle_chat_list)
@@ -251,6 +255,11 @@ class MacroEditorPage(BaseEditorPage):
         self.chat_table.hide()
         card.content_layout.addWidget(self.chat_table)
         return card
+
+    def _show_app_hint(self):
+        # The Keys page keeps its own copy of the settings, so ask fcitx5.
+        values = (self.dbus.get_config() or {}).get("values") or {}
+        self.chat_app_hint.setText(chat_shorthand.app_hint(values.get))
 
     def _show_chat(self, opening=False):
         entries, why = self.chat.entries()
@@ -308,6 +317,7 @@ class MacroEditorPage(BaseEditorPage):
 
     def refresh_status(self):
         super().refresh_status()
+        self._show_app_hint()
         self._show_chat()
 
     def control_for(self, key):

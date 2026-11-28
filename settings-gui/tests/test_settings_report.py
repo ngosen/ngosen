@@ -109,6 +109,7 @@ class SettingsReportTest(unittest.TestCase):
         self.assertIn("Language by the switch key: kitty: English, zalo: Vietnamese", text)
         self.assertIn("Emoji suggestions on: zalo", text)
         self.assertIn("Teencode on: (none)", text)
+        self.assertIn("Chat abbreviations off: (none)", text)
         self.assertIn("Vim mode on: kitty", text)
 
     def test_counts_macros_without_their_text(self):
@@ -120,7 +121,7 @@ class SettingsReportTest(unittest.TestCase):
     def test_prints_mode_switching_and_macro_format_settings(self):
         text = self.report()
         self.assertIn("(TimeFormat): %H:%M:%S", text)
-        self.assertIn("(ModeOrder): Preedit,Sen,Emoji,Teencode,Off,Vim", text)
+        self.assertIn("(ModeOrder): Preedit,Sen,Emoji,Teencode,ChatShorthand,Off,Vim", text)
         self.assertIn("(ShowModeEmoji): off", text)
 
     def test_shows_a_saved_global_off_as_sen_like_the_window(self):
@@ -131,7 +132,13 @@ class SettingsReportTest(unittest.TestCase):
         values = {**VALUES, "TimeFormat": "%k:%M", "ModeOrder": "Vim,Bogus,Sen"}
         text = self.report(FakeHandler({"values": values, "metadata": METADATA}))
         self.assertIn("(TimeFormat): %H:%M", text)
-        self.assertIn("(ModeOrder): Vim,Sen,Preedit,Emoji,Teencode,Off", text)
+        self.assertIn("(ModeOrder): Vim,Sen,Preedit,Emoji,Teencode,ChatShorthand,Off", text)
+
+    def test_lists_the_apps_with_chat_abbreviations_off(self):
+        conf = os.path.join(os.path.dirname(self.vim_conf), "ngosen-chat-shorthand-off-apps.conf")
+        with open(conf, "w", encoding="utf-8") as f:
+            f.write("# Apps where Ngó Sen leaves chat abbreviations as typed, one per line\ncode\n")
+        self.assertIn("Chat abbreviations off: code", self.report())
 
     def test_keeps_the_good_lines_of_a_vim_list_that_is_not_utf8(self):
         with open(self.vim_conf, "wb") as f:

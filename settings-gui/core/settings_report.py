@@ -96,8 +96,9 @@ def _app_list(handler, path):
     return _named(a.get("App", "") for a in handler.get_sub_config_list(path, "Apps"))
 
 
-def read_vim_apps(config_dir):
-    path = os.path.join(config_dir, "fcitx5", "conf", "ngosen-vim-apps.conf")
+def read_app_file(config_dir, name):
+    """The apps in a list the engine keeps as a file of its own."""
+    path = os.path.join(config_dir, "fcitx5", "conf", name)
     try:
         # The engine reads the file as bytes, so one bad line does not hide the others.
         with open(path, encoding="utf-8", errors="replace") as f:
@@ -120,7 +121,11 @@ def app_lines(handler, config_dir):
         ("Language by the switch key", [f"{a}: {languages[a]}" for a in _named(languages)]),
         ("Emoji suggestions on", _app_list(handler, "emoji_apps")),
         ("Teencode on", _app_list(handler, "teencode_apps")),
-        ("Vim mode on", _named(read_vim_apps(config_dir))),
+        (
+            "Chat abbreviations off",
+            _named(read_app_file(config_dir, "ngosen-chat-shorthand-off-apps.conf")),
+        ),
+        ("Vim mode on", _named(read_app_file(config_dir, "ngosen-vim-apps.conf"))),
     ]
     return ["[Per app]"] + [f"{name}: {', '.join(apps) or '(none)'}" for name, apps in lists]
 

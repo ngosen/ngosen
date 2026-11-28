@@ -128,6 +128,8 @@ namespace fcitx {
         void announceRelease(const std::string& release);
         // Tells, once, that Đoán dấu learns from what the user types.
         void announceLearning();
+        // Tells, once, what the first chat abbreviation became and how to take it back.
+        void announceShorthand();
 
         /**
          * @brief Gets the current configuration.
@@ -243,6 +245,11 @@ namespace fcitx {
         std::pair<std::string, std::string> saveLearned();
         // Forgets what Đoán dấu learned, in memory and on disk; on failure, why.
         std::pair<bool, std::string> forgetLearned();
+        // The chat abbreviations, one per line: the key, its text, and "kept" when the user keeps it as
+        // typed, each after a tab. Empty when the list did not load.
+        std::string chatShorthandList() const;
+        // Expands an abbreviation again that the user kept as typed; on failure, why.
+        std::pair<bool, std::string> expandShorthandAgain(const std::string& key);
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
         std::string getProgramName(InputContext* ic) const;
@@ -323,6 +330,7 @@ namespace fcitx {
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
         std::unique_ptr<EventSourceTime> announceTimer_;
         std::unique_ptr<EventSourceTime> announceLearningTimer_;
+        bool                             awaitsShorthandUse_ = false;
         std::unique_ptr<EventSourceTime> menuClickTimer_;
         // Instance::eventDispatcher() needs fcitx5 newer than Ubuntu 24.04 and Debian 12 ship.
         EventDispatcher clickDispatcher_;

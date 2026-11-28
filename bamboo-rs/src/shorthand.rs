@@ -29,6 +29,10 @@ struct Kept {
     learning: bool,
     /// How many times in a row each abbreviation was taken back.
     taken_back: BTreeMap<String, u8>,
+    /// Whether the front end waits to hear of an expansion.
+    awaits_use: bool,
+    /// The expansion it waits for, once there is one: what was typed and what it became.
+    first_use: Option<(String, String)>,
 }
 
 impl Shorthand {
@@ -46,13 +50,36 @@ impl Shorthand {
     /// What `word` stands for, unless the user keeps it as typed.
     pub fn get(&self, word: &str) -> Option<&str> {
         let text = self.table.get(word)?;
+        (!self.keeps(word)).then_some(text)
+    }
+
+    /// Whether `word` is an abbreviation the user keeps as typed.
+    pub fn keeps(&self, word: &str) -> bool {
         let count = self.kept().taken_back.get(&word.to_lowercase()).copied();
-        (count.unwrap_or(0) < KEEP_AFTER).then_some(text)
+        self.table.get(word).is_some() && count.unwrap_or(0) >= KEEP_AFTER
     }
 
     /// Whether taking an abbreviation back is counted. Those already kept stay so.
     pub fn set_learning(&self, on: bool) {
         self.kept().learning = on;
+    }
+
+    /// Holds the next expansion for `take_first_use`.
+    pub fn await_use(&self) {
+        self.kept().awaits_use = true;
+    }
+
+    /// `word` was expanded to `text` in a field.
+    pub fn expanded(&self, word: &str, text: &str) {
+        let mut kept = self.kept();
+        if std::mem::take(&mut kept.awaits_use) {
+            kept.first_use = Some((word.to_string(), text.to_string()));
+        }
+    }
+
+    /// The expansion `await_use` asked for, once.
+    pub fn take_first_use(&self) -> Option<(String, String)> {
+        self.kept().first_use.take()
     }
 
     /// Reads the counts in `path` and writes them there from now on.
@@ -100,6 +127,36 @@ impl Shorthand {
         }
         // A count that could not be written still holds until fcitx5 quits.
         let _ = kept.save();
+    }
+
+    /// Every abbreviation with its text and whether the user keeps it as typed, by key.
+    pub fn list(&self) -> Vec<(String, String, bool)> {
+        let kept = self.kept();
+        let mut list: Vec<_> = self
+            .table
+            .entries()
+            .map(|(key, text)| {
+                let count = kept.taken_back.get(key).copied().unwrap_or(0);
+                (key.to_string(), text.to_string(), count >= KEEP_AFTER)
+            })
+            .collect();
+        list.sort();
+        list
+    }
+
+    /// Expands `word` again, whatever the learning switch says: the user asked for this one.
+    pub fn expand_again(&self, word: &str) -> io::Result<()> {
+        let mut kept = self.kept();
+        let key = word.to_lowercase();
+        let Some(count) = kept.taken_back.remove(&key) else {
+            return Ok(());
+        };
+        let saved = kept.save();
+        // Or the file brings the key back as kept after a restart, with nothing left to retry.
+        if saved.is_err() {
+            kept.taken_back.insert(key, count);
+        }
+        saved
     }
 
     /// Forgets every count, in memory and in the file.
@@ -256,6 +313,64 @@ mod tests {
         );
         assert_eq!(again.get("ko"), Some("không"));
         again.forget().unwrap();
+    }
+
+    #[test]
+    fn the_list_marks_the_kept_keys_and_one_can_expand_again() {
+        let dir = TempDir::new("kept-list");
+        let path = dir.0.join("kept");
+        let s = shorthand(true);
+        s.keep_in(&path);
+        s.taken_back("ko");
+        s.taken_back("ko");
+        s.taken_back("dc");
+        let row = |key: &str, text: &str, kept| (key.to_string(), text.to_string(), kept);
+        assert_eq!(
+            s.list(),
+            [row("dc", "được", false), row("ko", "không", true)]
+        );
+
+        s.set_learning(false);
+        s.expand_again("Ko").unwrap();
+        assert_eq!(s.get("ko"), Some("không"));
+        assert_eq!(fs::read_to_string(&path).unwrap(), "dc\t1\n");
+        s.expand_again("ko").unwrap();
+    }
+
+    #[test]
+    fn the_first_expansion_is_held_only_when_asked_for() {
+        let s = shorthand(true);
+        s.expanded("ko", "không");
+        assert_eq!(s.take_first_use(), None);
+
+        s.await_use();
+        assert_eq!(s.take_first_use(), None);
+        s.expanded("Ko", "Không");
+        s.expanded("dc", "được");
+        let first = Some(("Ko".to_string(), "Không".to_string()));
+        assert_eq!(s.take_first_use(), first);
+        assert_eq!(s.take_first_use(), None);
+        s.expanded("dc", "được");
+        assert_eq!(s.take_first_use(), None);
+    }
+
+    #[test]
+    fn a_key_that_could_not_be_expanded_again_stays_kept() {
+        let dir = TempDir::new("kept-retry");
+        let path = dir.0.join("kept");
+        let s = shorthand(true);
+        s.keep_in(&path);
+        s.taken_back("ko");
+        s.taken_back("ko");
+        s.taken_back("dc");
+        fs::create_dir(unfinished(&path)).unwrap();
+        assert!(s.expand_again("ko").is_err());
+        assert_eq!(s.get("ko"), None);
+
+        fs::remove_dir(unfinished(&path)).unwrap();
+        s.expand_again("ko").unwrap();
+        assert_eq!(s.get("ko"), Some("không"));
+        assert_eq!(fs::read_to_string(&path).unwrap(), "dc\t1\n");
     }
 
     #[test]

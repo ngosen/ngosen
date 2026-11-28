@@ -326,6 +326,8 @@ namespace fcitx {
         HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0};
         // Set once the notification that Đoán dấu learns was shown.
         HiddenOption<bool> learningAnnounced{this, "LearningAnnounced", _("Learning Announced"), false};
+        // Set once the notification about the first chat abbreviation expanded was shown.
+        HiddenOption<bool> chatShorthandAnnounced{this, "ChatShorthandAnnounced", _("Chat Abbreviations Announced"), false};
         // The last feature release (X.Y) whose "What's new" notification was shown.
         HiddenOption<std::string> announcedVersion{this, "AnnouncedVersion", _("Announced Version"), ""}; KeyListOption modeMenuKey{
             this, "ModeMenuKey", _("Mode Menu Hotkey"), {Key("grave")}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};

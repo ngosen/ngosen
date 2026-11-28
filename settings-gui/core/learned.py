@@ -38,6 +38,12 @@ def how_it_learns(file=None):
             " it guessed itself, and not text from macros."
         ),
         _(
+            "A word without marks that Ngó Sen does not know, such as a name or khum, is learned"
+            " once you typed it and went on typing three times, so fixing typos leaves it alone."
+            " Only words of 2 to 10 letters, only while typos are fixed, and not in a terminal."
+            " The count stays in memory and starts again when fcitx5 restarts."
+        ),
+        _(
             "It keeps runs of one, two and three words with how often each came, and where a"
             " run of typing started and ended. Put together, they can show short sentences you"
             " typed."
@@ -60,6 +66,11 @@ def how_it_learns(file=None):
             "Kept in {} as plain text only you can read, saved every 5 minutes when there is"
             " something new and when fcitx5 quits. Nothing is sent anywhere."
         ).format(shown_path(file or path())),
+        _(
+            "A chat abbreviation you take back with Backspace twice in a row stays as typed."
+            " Which ones is kept in {}, counted while learning is on, with Đoán dấu on or off;"
+            " the Macros page lists them and can make one expand again."
+        ).format(shown_path(os.path.join(os.path.dirname(file or path()), KEPT_SHORTHAND))),
         _("The typing log is separate: it is written only when you choose Save typing log."),
     ]
 

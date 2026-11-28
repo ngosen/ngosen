@@ -30,7 +30,6 @@ namespace {
         c.setValueByPath("InputMethod", "Telex");
         c.setValueByPath("GuessDiacritics", guess ? "True" : "False");
         c.setValueByPath("LearnDiacritics", learn ? "True" : "False");
-        c.setValueByPath("ChatShorthand", "True");
         return c;
     }
 
@@ -156,6 +155,32 @@ namespace {
         check(!std::filesystem::exists(kept), "forgetting removes their file");
         type(engine, context, "ko ");
         check(context.commits().back() == "không ", "a forgotten key expands again");
+
+        const std::string keptLine = "ko\tkhông\tkept";
+        check(engine.chatShorthandList().find("ko\tkhông\t") != std::string::npos, "the list holds the abbreviations");
+        check(engine.chatShorthandList().find(keptLine) == std::string::npos, "the list marks no key that expands");
+        check(koAfterTwoTakenBack(engine, context) == "ko ", "the key is kept again");
+        check(engine.chatShorthandList().find(keptLine) != std::string::npos, "the list marks a key kept as typed");
+        check(engine.expandShorthandAgain("ko").first, "expanding a kept key again works");
+        check(engine.chatShorthandList().find(keptLine) == std::string::npos, "the list no longer marks it");
+        check(!std::filesystem::exists(kept), "its count leaves the file");
+        type(engine, context, "ko ");
+        check(context.commits().back() == "không ", "the key expands again");
+
+        // A settings window that read the marks before a notice went out writes the old ones back.
+        const auto written = [&engine](const std::string& mark, const char* value) {
+            fcitx::RawConfig c = config(false);
+            c.setValueByPath(mark, value);
+            engine.setConfig(c);
+            fcitx::RawConfig now;
+            engine.getConfig()->save(now);
+            const std::string* kept = now.valueByPath(mark);
+            return kept != nullptr ? *kept : std::string();
+        };
+        for (const std::string mark : {"ChatShorthandAnnounced", "LearningAnnounced"}) {
+            check(written(mark, "True") == "True", mark + " can be set");
+            check(written(mark, "False") == "True", mark + " is not taken back by a later write");
+        }
     }
 
 } // namespace

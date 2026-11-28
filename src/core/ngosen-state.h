@@ -126,7 +126,7 @@ namespace ngosen {
         void setShorthandOn(bool on) {
             shorthandOn_ = on;
         }
-        // Whether what is typed here goes to a shell, which no abbreviation changes.
+        // Whether the app is a terminal, where no abbreviation expands.
         bool isCommandLine() const;
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
@@ -1072,6 +1072,7 @@ namespace ngosen {
         bool         mayShowWebTerminal() const;
         bool         marksEachField() const;
         bool         mayBeCommandLine() const;
+        bool         inEditorTerminal() const;
         void         checkFirstLetters();
         void         resetLetterCheckOnFieldChange();
         std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held

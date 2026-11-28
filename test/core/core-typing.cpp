@@ -306,7 +306,8 @@ namespace {
         bool                                             guess          = true;
         bool                                             inTerminals    = false;
         bool                                             shorthand      = false;
-        bool                                             shorthandHere  = true; // the user's choice for the app
+        bool                                             shorthandHere  = true;  // the user's choice for the app
+        bool                                             holdsTerminal  = false; // the app was found to hold an xterm.js terminal
         bool                                             macrosWhileOff = false;
         std::vector<std::pair<std::string, std::string>> macros;
         std::string                                      keptIn; // the file that counts the chat abbreviations taken back
@@ -334,6 +335,8 @@ namespace {
             resources.setMacros(run.macros);
         if (!run.keptIn.empty())
             resources.keepShorthandIn(run.keptIn);
+        if (run.holdsTerminal)
+            resources.noteWebTerminal(field.program);
         const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
         if (run.learned != nullptr)
             resources.learnDiacriticsInto(learned);
@@ -1336,6 +1339,13 @@ namespace {
             check(text == "không ", "chat shorthand: on in a browser, though a page may show a terminal" + name, text);
             text = typeGuessingInApp(makeField("wayland", true, "code"), mode, "ko ", {.shorthand = true});
             check(text == "không ", "chat shorthand: on in an editor that holds a terminal" + name, text);
+            // A field that reports late has shown nothing yet, which is not what a terminal's field shows.
+            for (const auto& [delayMs, gapMs] : {std::pair{300, 50}, std::pair{700, 150}}) {
+                text = typeGuessingInApp(makeField("wayland", true, "code"), mode, "as ko dc ", {.quirks = {.reportDelayMs = delayMs}, .shorthand = true, .keyMs = gapMs});
+                check(text == "á không được ", "chat shorthand: on in an editor field that reports " + std::to_string(delayMs) + " ms late" + name, text);
+            }
+            text = typeGuessingInApp(makeField("wayland", true, "hyper"), mode, "ko ", {.shorthand = true, .holdsTerminal = true});
+            check(text == "ko ", "chat shorthand: off in an app found to be a terminal" + name, text);
             text = typeGuessingInApp(reports, mode, "ko ", {.shorthand = true, .macros = {{"ko", "kansas"}}});
             check(text == "kansas ", "chat shorthand: the user's own macro wins" + name, text);
             for (const auto& [where, field] : keptAsTyped) {

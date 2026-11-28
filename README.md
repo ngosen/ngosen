@@ -113,7 +113,9 @@ Hoàn tác.
   liền thì từ đó Ngó Sen để nguyên. Trang **Gõ tắt** trong cửa sổ cài đặt có danh sách các chữ viết tắt,
   nút **Bung lại** cho chữ đang để nguyên, và công tắc **Bung chữ viết tắt khi chat** để tắt hẳn. Không bung
   trong terminal, ô mật khẩu, ô địa chỉ (Firefox không báo đâu là ô địa chỉ, nên ở đó thường vẫn bung), và
-  ở kiểu gõ gạch chân trong app không báo chữ cho bộ gõ, vì ở đó Backspace không lấy lại được.
+  ở kiểu gõ gạch chân trong app không báo chữ cho bộ gõ, vì ở đó Backspace không lấy lại được. Trong
+  VS Code và các trình soạn code cùng họ, chữ viết tắt bung ở ô soạn thảo; terminal gắn sẵn thì Ngó Sen
+  nhận ra từ chữ thứ hai gõ vào đó ở kiểu Gõ Sen, còn ở kiểu gõ gạch chân thì chưa nhận ra được.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.
 

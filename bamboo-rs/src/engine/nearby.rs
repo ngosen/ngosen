@@ -95,12 +95,13 @@ pub(crate) fn one_slip_away(keys: &str, marks: bool) -> Vec<(String, f64)> {
         .collect()
 }
 
-/// The letters `keys` type whatever their marks: without the mark keys after a vowel, and with
-/// each doubled a, e, o or d typed once.
+/// The letters `keys` type whatever their marks: without the mark keys after a vowel, with each
+/// doubled a, e, o or d typed once, and a w with no vowel before it as the u of ư.
 fn letters_of(keys: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity(keys.len());
     let mut vowel = false;
     for &key in keys {
+        let key = if key == b'w' && !vowel { b'u' } else { key };
         let doubled = b"aeod".contains(&key) && out.last() == Some(&key);
         if doubled || (vowel && MARK_KEYS.contains(&key)) {
             continue;
@@ -244,6 +245,8 @@ mod tests {
         assert_eq!(letters_of(b"goox"), letters_of(b"gox"));
         // Before a vowel, s and r are letters.
         assert_eq!(letters_of(b"sowr"), b"so");
+        // A w with no vowel before it types ư.
+        assert_eq!(letters_of(b"thwr"), letters_of(b"thuwr"));
     }
 
     #[test]

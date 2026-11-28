@@ -103,7 +103,8 @@ Hoàn tác.
 - **Đoán dấu:** gõ không dấu `toi di hoc` thì ra `tôi đi học`. Tắt sẵn; bật ở trang **Đoán chữ** trong
   cửa sổ cài đặt, nơi có thêm lựa chọn sửa cả âm tiết gõ sai (`mọi mguoifw` ra `mọi người`) và mức mạnh
   tay khi sửa. Từ gõ trượt mà chưa đủ chắc thì được xét lại khi bạn gõ xong từ kế tiếp; Backspace ngay
-  sau đó trả lại đúng chữ đã gõ. Trong terminal và ứng dụng X11 cũ qua XIM, Đoán dấu nghỉ trừ khi bật **Đoán cả trong
+  sau đó trả lại đúng chữ đã gõ. Công tắc thử nghiệm **Sửa cả dấu gõ nhầm** sửa thêm chữ gõ nhầm phím dấu
+  (`tôi gỗ phím` ra `tôi gõ phím`) khi các chữ xung quanh cho thấy rõ. Trong terminal và ứng dụng X11 cũ qua XIM, Đoán dấu nghỉ trừ khi bật **Đoán cả trong
   terminal**: ở đó nó không sửa lại được chữ trước nên đoán sai nhiều hơn. Đoán dấu học từ chữ bạn gõ để
   đoán sát cách bạn viết; xem [Đoán chữ học gì](#doan-chu-hoc-gi).
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.

@@ -687,6 +687,13 @@ pub extern "C" fn EngineSetFixing(engine: usize, margin: u8) {
     handles::with_engine(engine, |e| e.set_fixing(margin));
 }
 
+/// Whether Đoán dấu also fixes a word it knows to one that differs from it only in marks, once
+/// the word after it ends. Off until asked for.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetFixMarks(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_fix_marks(on != 0));
+}
+
 /// Whether a word without marks that nothing knows, typed and left alone three times, is learned
 /// as meant in this field. Off until asked for.
 #[unsafe(no_mangle)]

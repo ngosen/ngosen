@@ -381,6 +381,13 @@
     }
    ],
    [
+    "GuessFixesMarks",
+    "Boolean",
+    "Also fix marks typed wrong (experimental)",
+    "False",
+    {}
+   ],
+   [
     "GuessInTerminals",
     "Boolean",
     "Guess in terminals too",

@@ -19,7 +19,7 @@ pub use personal::{MAX_WEIGHT, Personal};
 pub use run::{Change, MAX_RUN, Reach, Run};
 pub use table::{Error, Table};
 pub use tone::ToneStyle;
-pub use typing::{Choices, FIX_MARGIN, Fix, Nearby, SENSITIVE_CONFIDENCE, Typing};
+pub use typing::{Choices, FIX_MARGIN, Fix, MARKS_MARGIN, Nearby, SENSITIVE_CONFIDENCE, Typing};
 
 use table::BOS;
 

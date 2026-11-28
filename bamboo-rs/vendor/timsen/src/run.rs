@@ -1,7 +1,7 @@
 //! What an input method changes in the field when a word ends: the run as it is shown, against the
 //! run as it is guessed.
 
-use crate::{Fix, Nearby, ToneStyle, Typing, tone};
+use crate::{Fix, MARKS_MARGIN, Nearby, ToneStyle, Typing, tone};
 
 /// One change to the field: syllables `first..first + old.len()` of the run read `old` and become
 /// `new`, as long. The input method checks `old` against the field before it deletes anything, and
@@ -72,10 +72,12 @@ enum Pushed {
     Kept(String),
 }
 
-/// A syllable left as typed that the next word may still fix, with the words near its keys.
+/// A syllable left as typed that the next word may still fix, with the words near its keys, and
+/// whether those differ from it only in marks ([`Run::push_marks`]).
 struct Waiting {
     at: usize,
     nearby: Vec<(String, f64)>,
+    marks: bool,
 }
 
 /// A run on its way into a field. Each syllable is shown as typed until a [`Change`] says otherwise;
@@ -158,20 +160,50 @@ impl<'t> Run<'t> {
             let nearby = (nearby.iter())
                 .map(|near| (near.word.to_string(), near.cost))
                 .collect();
-            self.waiting = Some(Waiting { at, nearby });
+            self.waiting = Some(Waiting {
+                at,
+                nearby,
+                marks: false,
+            });
+        }
+    }
+
+    /// A word that may be known, with `raw` its second reading as for [`Run::push_either`], and
+    /// `nearby` the words that keys near the ones typed would have shown and that differ from it
+    /// only in marks. It is shown as typed; when the word after it ends, it is fixed to one of
+    /// those that wins over keeping it by [`MARKS_MARGIN`] ([`Typing::fix_marks`]). That needs
+    /// fixing on and [`Run::fixing_again`]. A syllable nothing knows is fixed as [`Run::push`]
+    /// fixes it.
+    pub fn push_marks(&mut self, syllable: &str, raw: Option<&str>, nearby: &[Nearby<'_>]) {
+        match raw {
+            Some(raw) => self.push_either(syllable, raw),
+            None => self.push(syllable),
+        }
+        let at = self.shown.len() - 1;
+        if self.fixed[at].is_none() && !nearby.is_empty() {
+            let nearby = (nearby.iter())
+                .map(|near| (near.word.to_string(), near.cost))
+                .collect();
+            self.waiting = Some(Waiting {
+                at,
+                nearby,
+                marks: true,
+            });
         }
     }
 
     /// Decides the syllable before the one just pushed once more, when it waits for that.
     fn decide_waiting(&mut self) {
-        let Some(Waiting { at, nearby }) = self.waiting.take() else {
+        let Some(Waiting { at, nearby, marks }) = self.waiting.take() else {
             return;
         };
         if !self.fix_again {
             return;
         }
-        let Some(Pushed::Guessed(typed)) = self.pushed.get(at) else {
-            return;
+        let typed = match self.pushed.get(at) {
+            Some(Pushed::Guessed(typed)) => typed,
+            Some(Pushed::Either(interpreted, _)) if marks => interpreted,
+            _ => return,
         };
         if at + 2 != self.shown.len() {
             return;
@@ -182,14 +214,17 @@ impl<'t> Run<'t> {
             .collect();
         let i = self.context.len() + at;
         let fix = (self.fix_margin)
-            .and_then(|m| {
-                let fix = self.typing.fix_nearby(i, false, &nearby);
-                fix.filter(|f| f.margin >= m)
+            .and_then(|m| match marks {
+                true => {
+                    (self.typing.fix_marks(i, false, &nearby)).filter(|f| f.margin >= MARKS_MARGIN)
+                }
+                false => (self.typing.fix_nearby(i, false, &nearby)).filter(|f| f.margin >= m),
             })
             .and_then(|f| fix_case(&typed, &f.word));
         if let Some(fix) = fix {
             self.fixed[at] = Some(typed);
             self.pushed[at] = Pushed::Guessed(fix);
+            self.readings[at] = None;
             self.retype_from(at);
         }
     }
@@ -1027,5 +1062,104 @@ mod tests {
             }
             assert_eq!(run.last_fix(), Some(0), "way {way}");
         }
+    }
+
+    /// Pushes a word with the words that differ from it only in marks and applies the change.
+    fn type_marks(run: &mut Run, word: &str, raw: Option<&str>, nearby: &[(&str, f64)]) {
+        let nearby: Vec<Nearby> = (nearby.iter())
+            .map(|&(word, cost)| Nearby { word, cost })
+            .collect();
+        run.push_marks(word, raw, &nearby);
+        if let Some(c) = run.change(false, Reach::Run, ToneStyle::New) {
+            assert!(run.apply(&c));
+        }
+    }
+
+    // On the fixture, gõ for gỗ between "tôi" and "phím" wins by 21.63 before its cost.
+    #[test]
+    fn a_known_word_is_fixed_in_its_marks_once_the_next_word_ends() {
+        let t = table();
+        for (again, shown) in [(true, "Gõ"), (false, "Gỗ")] {
+            let run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+            let mut run = run.fixing_again(again);
+            type_words(&mut run, &["tôi"], Reach::Run);
+            type_marks(&mut run, "Gỗ", None, &[("gõ", 1.0)]);
+            assert_eq!(run.shown()[1], "Gỗ", "not at its end");
+            type_words(&mut run, &["phím"], Reach::Run);
+            assert_eq!(run.shown(), strings(&["tôi", shown, "phím"]));
+            assert_eq!(run.last_fix(), again.then_some(1));
+        }
+    }
+
+    #[test]
+    fn a_marks_fix_must_win_by_the_marks_margin() {
+        let t = table();
+        let fixing = |t| {
+            let run = Run::new(Typing::new(t), 0.99).fixing(Some(FIX_MARGIN));
+            run.fixing_again(true)
+        };
+        for (cost, shown) in [(5.0, "gõ"), (6.0, "gỗ")] {
+            let mut run = fixing(&t);
+            type_words(&mut run, &["tôi"], Reach::Run);
+            type_marks(&mut run, "gỗ", None, &[("gõ", cost)]);
+            type_words(&mut run, &["phím"], Reach::Run);
+            assert_eq!(run.shown()[1], shown, "cost {cost}");
+        }
+        // bàn wins by 7.66 here: enough for a word nothing knows, not for one the table has.
+        let mut run = fixing(&t);
+        type_words(&mut run, &["cái"], Reach::Run);
+        type_marks(&mut run, "bạn", None, &[("bàn", 1.0)]);
+        type_words(&mut run, &["này"], Reach::Run);
+        assert_eq!(run.shown(), strings(&["cái", "bạn", "này"]));
+    }
+
+    #[test]
+    fn a_word_read_two_ways_is_fixed_in_its_marks_too() {
+        let t = table();
+        let run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+        let mut run = run.fixing_again(true);
+        type_words(&mut run, &["tôi"], Reach::Run);
+        type_marks(&mut run, "gỗ", Some("gox"), &[("gõ", 1.0)]);
+        type_words(&mut run, &["phím", "rất", "nhanh", "và", "êm"], Reach::Run);
+        assert_eq!(run.shown()[1], "gõ");
+        assert!(run.undo_fix());
+        let back = run.change(false, Reach::Run, ToneStyle::New).unwrap();
+        assert_eq!((back.first, &back.new), (1, &strings(&["gỗ"])));
+    }
+
+    #[test]
+    fn a_raw_reading_that_fits_is_not_fixed_in_its_marks() {
+        let t = table();
+        let run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+        let mut run = run.fixing_again(true);
+        type_words(&mut run, &["tôi"], Reach::Run);
+        type_marks(&mut run, "gỗ", Some("gõ"), &[("gõ", 1.0)]);
+        type_words(&mut run, &["phím"], Reach::Run);
+        assert_eq!(run.shown()[1], "gõ");
+        assert!(!run.undo_fix(), "read so, not fixed");
+    }
+
+    #[test]
+    fn no_marks_fix_without_fixing_on() {
+        let t = table();
+        let mut run = Run::new(Typing::new(&t), 0.99).fixing_again(true);
+        type_words(&mut run, &["tôi"], Reach::Run);
+        type_marks(&mut run, "gỗ", None, &[("gõ", 1.0)]);
+        type_words(&mut run, &["phím"], Reach::Run);
+        assert_eq!(run.shown(), strings(&["tôi", "gỗ", "phím"]));
+    }
+
+    #[test]
+    fn keeping_a_known_word_is_scored_as_that_word() {
+        // gỗ fits "bàn … lim": kept as itself it beats gõ by 10.23, as an unknown word by 2.51.
+        let t = table();
+        let mut run = Run::new(Typing::new(&t), 0.99);
+        type_words(&mut run, &["bàn", "gỗ", "lim"], Reach::Run);
+        let near = [Nearby {
+            word: "gõ",
+            cost: 1.0,
+        }];
+        let fix = run.typing.fix_marks(1, false, &near).unwrap();
+        assert!(fix.margin < -5.0, "{}", fix.margin);
     }
 }

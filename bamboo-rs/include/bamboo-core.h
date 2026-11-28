@@ -74,6 +74,7 @@ extern void      EngineSetDropKeptTail(uintptr_t engine, uint8_t on);
 extern char*     EnginePullDroppedWord(uintptr_t engine);
 extern char*     EnginePullChanges(uintptr_t engine);
 extern void      EngineSetFixing(uintptr_t engine, uint8_t margin);
+extern void      EngineSetFixMarks(uintptr_t engine, uint8_t on);
 extern void      EngineSetCountingPlainWords(uintptr_t engine, uint8_t on);
 extern void      EngineTypedOn(uintptr_t engine);
 extern void      EngineErasedBack(uintptr_t engine);

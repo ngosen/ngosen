@@ -11,6 +11,7 @@ use std::sync::Arc;
 use bamboo_core::Engine;
 
 use super::BambooEngine;
+use crate::text::without_diacritics;
 
 /// Each row of letter keys with how far it is shifted to the right of the top row, in key widths.
 const ROWS: [(&str, f32); 3] = [("qwertyuiop", 0.0), ("asdfghjkl", 0.25), ("zxcvbnm", 0.75)];
@@ -20,6 +21,9 @@ const ROWS: [(&str, f32); 3] = [("qwertyuiop", 0.0), ("asdfghjkl", 0.25), ("zxcv
 const EASY: f64 = 1.0;
 /// An extra key that is neither a repeat nor beside the key before or after it.
 const STRAY: f64 = 2.0;
+
+/// The keys that add a mark to the letters typed before them: a tone, or w for a horn or breve.
+const MARK_KEYS: &[u8] = b"sfrxjw";
 
 /// Every further key of a word is some ten more key strings to type through the engine, and no
 /// syllable takes more keys than this, even with one too many.
@@ -41,9 +45,9 @@ fn near(a: u8, b: u8) -> bool {
 
 /// The key strings that `keys`, lowercase letters, are one slip away from, each with the cost of
 /// the cheapest slip that leads there. A key hit for one far from it and a key left out are not
-/// tried, unless the key left out is one of a doubled pair: either takes a string for every
-/// letter at every place.
-pub(crate) fn one_slip_away(keys: &str) -> Vec<(String, f64)> {
+/// tried, unless the key left out is one of a doubled pair or, with `marks`, a mark key: any other
+/// takes a string for every letter at every place.
+pub(crate) fn one_slip_away(keys: &str, marks: bool) -> Vec<(String, f64)> {
     let typed = keys.as_bytes();
     if typed.len() > LONGEST || !typed.iter().all(u8::is_ascii_lowercase) {
         return Vec::new();
@@ -78,10 +82,34 @@ pub(crate) fn one_slip_away(keys: &str) -> Vec<(String, f64)> {
             add([before, &[next, here], &rest[1..]].concat(), EASY);
         }
     }
+    // A mark key left out may belong after the last key typed too.
+    for i in (0..=typed.len()).filter(|_| marks) {
+        let (before, after) = typed.split_at(i);
+        for &key in MARK_KEYS {
+            add([before, &[key], after].concat(), EASY);
+        }
+    }
     out.remove(typed);
     (out.into_iter())
         .filter_map(|(keys, cost)| Some((String::from_utf8(keys).ok()?, cost)))
         .collect()
+}
+
+/// The letters `keys` type whatever their marks: without the mark keys after a vowel, with each
+/// doubled a, e, o or d typed once, and a w with no vowel before it as the u of ư.
+fn letters_of(keys: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(keys.len());
+    let mut vowel = false;
+    for &key in keys {
+        let key = if key == b'w' && !vowel { b'u' } else { key };
+        let doubled = b"aeod".contains(&key) && out.last() == Some(&key);
+        if doubled || (vowel && MARK_KEYS.contains(&key)) {
+            continue;
+        }
+        vowel |= b"aeiouy".contains(&key);
+        out.push(key);
+    }
+    out
 }
 
 impl BambooEngine {
@@ -119,7 +147,27 @@ impl BambooEngine {
     /// The words that keys one slip away from `keys` would have typed, each with the cost of the
     /// cheapest slip that types it.
     pub(crate) fn words_near(&self, keys: &str) -> Vec<(String, f64)> {
-        let slips = one_slip_away(&keys.to_ascii_lowercase());
+        self.words_of(one_slip_away(&keys.to_ascii_lowercase(), self.fix_marks))
+    }
+
+    /// The words that keys one slip away from `keys` would have typed and that differ from
+    /// `shown`, what the keys typed, only in marks. When `shown` is the keys themselves, as for a
+    /// word the engine took back to its keys, any word a slip of mark keys gives counts.
+    pub(crate) fn marks_near(&self, keys: &str, shown: &str) -> Vec<(String, f64)> {
+        let typed = keys.to_ascii_lowercase();
+        let letters = letters_of(typed.as_bytes());
+        let slips = (one_slip_away(&typed, true).into_iter())
+            .filter(|(keys, _)| letters_of(keys.as_bytes()) == letters)
+            .collect();
+        let shown = shown.to_lowercase();
+        let (plain, as_keys) = (without_diacritics(&shown), shown == typed);
+        let mut words = self.words_of(slips);
+        words.retain(|(word, _)| *word != shown && (as_keys || without_diacritics(word) == plain));
+        words
+    }
+
+    /// The words `slips` type, each with the cost of the cheapest slip that types it.
+    fn words_of(&self, slips: Vec<(String, f64)>) -> Vec<(String, f64)> {
         if slips.is_empty() {
             return Vec::new();
         }
@@ -140,7 +188,8 @@ mod tests {
     use super::*;
 
     fn cost(typed: &str, meant: &str) -> Option<f64> {
-        (one_slip_away(typed).into_iter()).find_map(|(keys, cost)| (keys == meant).then_some(cost))
+        (one_slip_away(typed, false).into_iter())
+            .find_map(|(keys, cost)| (keys == meant).then_some(cost))
     }
 
     #[test]
@@ -174,15 +223,35 @@ mod tests {
 
     #[test]
     fn only_lowercase_letters_of_a_syllable_are_searched() {
-        assert!(one_slip_away("nguoi72").is_empty());
-        assert!(one_slip_away("Nguoiwf").is_empty());
-        assert!(one_slip_away("internationalization").is_empty());
-        assert!(!one_slip_away("nghieengs").is_empty());
+        assert!(one_slip_away("nguoi72", false).is_empty());
+        assert!(one_slip_away("Nguoiwf", false).is_empty());
+        assert!(one_slip_away("internationalization", false).is_empty());
+        assert!(!one_slip_away("nghieengs", false).is_empty());
+    }
+
+    #[test]
+    fn a_mark_key_left_out_is_tried_only_when_asked() {
+        let left_out = |marks| {
+            (one_slip_away("nhung", marks).into_iter())
+                .find_map(|(keys, cost)| (keys == "nhuwng").then_some(cost))
+        };
+        assert_eq!(left_out(true), Some(EASY));
+        assert_eq!(left_out(false), None);
+    }
+
+    #[test]
+    fn the_letters_of_keys_leave_their_marks_out() {
+        assert_eq!(letters_of(b"dduowcj"), b"duoc");
+        assert_eq!(letters_of(b"goox"), letters_of(b"gox"));
+        // Before a vowel, s and r are letters.
+        assert_eq!(letters_of(b"sowr"), b"so");
+        // A w with no vowel before it types ư.
+        assert_eq!(letters_of(b"thwr"), letters_of(b"thuwr"));
     }
 
     #[test]
     fn the_keys_typed_are_not_among_them() {
         assert_eq!(cost("aab", "aab"), None);
-        assert!(one_slip_away("").is_empty());
+        assert!(one_slip_away("", false).is_empty());
     }
 }

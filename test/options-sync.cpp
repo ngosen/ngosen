@@ -52,6 +52,7 @@ namespace {
         c.setValueByPath("GuessDiacritics", "True");
         c.setValueByPath("GuessFixesTypos", "True");
         c.setValueByPath("GuessFixStrength", "Strong");
+        c.setValueByPath("GuessFixesMarks", "True");
         c.setValueByPath("GuessInTerminals", "True");
         c.setValueByPath("LearnDiacritics", "False");
         c.setValueByPath("MessengerSelectOvertype", "False");
@@ -97,6 +98,7 @@ namespace {
         check(step + ": GuessDiacritics", o.guessDiacritics == c.guessDiacritics.value());
         check(step + ": GuessFixesTypos", o.guessFixesTypos == c.guessFixesTypos.value());
         check(step + ": GuessFixStrength", o.guessFixStrength == static_cast<int>(c.guessFixStrength.value()));
+        check(step + ": GuessFixesMarks", o.guessFixesMarks == c.guessFixesMarks.value());
         check(step + ": GuessInTerminals", o.guessInTerminals == c.guessInTerminals.value());
         check(step + ": LearnDiacritics", o.learnDiacritics == c.learnDiacritics.value());
         check(step + ": MessengerSelectOvertype", o.messengerSelectOvertype == c.messengerSelectOvertype.value());
@@ -148,6 +150,7 @@ namespace {
         check("default GuessDiacritics", o.guessDiacritics == d.guessDiacritics);
         check("default GuessFixesTypos", o.guessFixesTypos == d.guessFixesTypos);
         check("default GuessFixStrength", o.guessFixStrength == d.guessFixStrength);
+        check("default GuessFixesMarks", o.guessFixesMarks == d.guessFixesMarks);
         check("default GuessInTerminals", o.guessInTerminals == d.guessInTerminals);
         check("default LearnDiacritics", o.learnDiacritics == d.learnDiacritics);
         check("default RetypeAfterSwitch", o.retypeAfterSwitch == d.retypeAfterSwitch);

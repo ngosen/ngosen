@@ -97,7 +97,7 @@ While Đoán dấu is on, it learns from what you type. Learning is on by defaul
 learns, a desktop notification says so once.
 
 - What: words with marks that Ngó Sen put into a field, both words you typed with marks and words you
-  kept as typed with Backspace after a wrong guess. Not words it guessed itself, and not text from macros.
+  put back as typed with Backspace three times after a wrong guess (the count is kept in memory only). Not words it guessed itself, and not text from macros.
 - What is kept: runs of one, two and three words with how often each came, and where a run of typing
   started and ended. Put together, they can show short sentences you typed.
 - When: when a run of typing ends, that is, you leave the field, click, press Enter, or type 200

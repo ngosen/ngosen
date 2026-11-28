@@ -2881,6 +2881,17 @@ fn a_macro_word_put_back_does_not_count_toward_keeping_a_word() {
 }
 
 #[test]
+fn take_backs_count_with_a_fix_left_alone_between_them() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    for back in [true, false, true, true] {
+        let shown = later_fix_round(&dictionary, &learning, back);
+        assert_eq!(shown, ["ta", "bàn", "phím"]);
+    }
+    let shown = later_fix_round(&dictionary, &learning, false);
+    assert_eq!(shown, ["ta", "banfm", "phím"]);
+}
+
+#[test]
 fn forgetting_starts_the_count_again() {
     let (dictionary, learning) = (shared_dictionary(), learning_on());
     later_fix_round(&dictionary, &learning, true);

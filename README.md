@@ -79,8 +79,9 @@ Hoàn tác.
   **Chuyển mã** trong cửa sổ cài đặt; trang này còn có ô để dán chữ vào và chuyển ngay. Đã thử trên GNOME
   với Firefox, Chromium, LibreOffice Writer và GNOME Text Editor; không dùng được trong terminal.
 - **Menu chế độ riêng cho từng app:** nhấn phím `` ` `` để mở menu cạnh con trỏ, chọn **Gõ Sen (1)**,
-  **Gạch chân (q)** hoặc **Tắt (e)**, bật **Gợi ý emoji (w)** cho app muốn dùng, và bật **Vim mode (v)** cho
-  app dùng phím Vim như nvim hay Claude Code. Ngó Sen nhớ lựa chọn riêng cho từng app.
+  **Gạch chân (q)** hoặc **Tắt (e)**, bật **Gợi ý emoji (w)** cho app muốn dùng, tắt **Chữ viết tắt khi
+  chat (c)** ở app không muốn bung, và bật **Vim mode (v)** cho app dùng phím Vim như nvim hay Claude Code.
+  Ngó Sen nhớ lựa chọn riêng cho từng app.
 - **Gõ thẳng không gạch chân (Gõ Sen):** chữ vào app ngay khi gõ; gợi ý ở thanh địa chỉ hay ô tìm kiếm
   hiện theo từng phím.
 - **Nhận ra tiếng Anh:** chữ không thể thành tiếng Việt thì hiện lại đúng phím đã gõ. Đo bằng Telex, cài
@@ -111,9 +112,13 @@ Hoàn tác.
   `công việc`, không cần tự khai gõ tắt. Bật sẵn, và lần đầu bung Ngó Sen báo một lần bằng thông báo của
   desktop. Bung nhầm thì bấm Backspace ngay sau dấu cách để lấy lại chữ đã gõ; chữ nào bạn lấy lại hai lần
   liền thì từ đó Ngó Sen để nguyên. Trang **Gõ tắt** trong cửa sổ cài đặt có danh sách các chữ viết tắt,
-  nút **Bung lại** cho chữ đang để nguyên, và công tắc **Bung chữ viết tắt khi chat** để tắt hẳn. Không bung
+  nút **Bung lại** cho chữ đang để nguyên, và công tắc **Bung chữ viết tắt khi chat** để tắt hẳn. Muốn tắt
+  riêng cho một app, như trình soạn code, thì trong app đó nhấn `` ` `` rồi `c`; nhấn lại để bật. Không bung
   trong terminal, ô mật khẩu, ô địa chỉ (Firefox không báo đâu là ô địa chỉ, nên ở đó thường vẫn bung), và
-  ở kiểu gõ gạch chân trong app không báo chữ cho bộ gõ, vì ở đó Backspace không lấy lại được.
+  ở kiểu gõ gạch chân trong app không báo chữ cho bộ gõ, vì ở đó Backspace không lấy lại được. Trong
+  VS Code và các trình soạn code cùng họ, chữ viết tắt bung ở ô soạn thảo; terminal gắn sẵn thì Ngó Sen
+  nhận ra từ chữ thứ hai gõ vào đó ở kiểu Gõ Sen, còn ở kiểu gõ gạch chân thì chưa nhận ra được, nên ai gõ
+  lệnh nhiều ở đó hãy tắt riêng cho app.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.
 

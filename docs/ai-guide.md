@@ -65,13 +65,15 @@ app the choice is kept for: "App: <name>", or "cửa sổ này" (this window) wh
 | `q` | Gạch chân (Preedit) | Underlines the word until it is finished. Try it when Sen types wrong in one app. |
 | `w` | Gợi ý emoji: tắt/bật | Offers emoji after words like `cười`. Off until turned on here. |
 | `t` | Teencode: tắt/bật | Keeps marks on chat spellings like `zậy`, `đag`. |
+| `c` | Chữ viết tắt khi chat: bật/tắt | `ko` gives `không` at a word end. On until turned off here, for example in a code editor. |
 | `e` | Tắt (OFF) | Types English in this app only, for example a game or a code editor. |
 | `v` | Vim mode: tắt/bật | Vim commands after Esc go through as typed, for nvim or Claude Code. |
 | `` ` `` | Gõ `` ` `` | Types the `` ` `` character itself. |
 
 Press the key, or move with the arrow keys or Tab and press Enter. Esc, a click, or 5 seconds without a key
 closes it; any other key closes it and is typed. The `t` and `w` items only show while "Tự khôi phục từ gõ
-sai" (Auto restore invalid words) and "Gợi ý emoji khi gõ" (Suggest emoji while typing) are on. The keys,
+sai" (Auto restore invalid words) and "Gợi ý emoji khi gõ" (Suggest emoji while typing) are on, and the `c`
+item while "Bung chữ viết tắt khi chat" is on and the field is not a terminal. The keys,
 the menu key and the order of the items are set on the "Phím" (Keys) page, tab "Phím tắt" (Shortcuts).
 
 - In English mode `` ` `` types the character. In an app set to "Tắt", the switch key opens this menu while

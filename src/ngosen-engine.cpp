@@ -898,6 +898,7 @@ namespace fcitx {
         o.guessDiacritics                = config_.guessDiacritics.value();
         o.guessFixesTypos                = config_.guessFixesTypos.value();
         o.guessFixStrength               = static_cast<int>(config_.guessFixStrength.value());
+        o.guessFixesMarks                = config_.guessFixesMarks.value();
         o.guessInTerminals               = config_.guessInTerminals.value();
         o.learnDiacritics                = config_.learnDiacritics.value();
         o.emojiSuggestions               = config_.emojiSuggestions.value();

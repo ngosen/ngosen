@@ -95,6 +95,7 @@ namespace ngosen {
         const ngosen::Options& o = engine_->options();
         // The margin a fix must win by: 4, 3 or 2 from cautious to strong.
         EngineSetFixing(bambooEngine_.handle(), o.guessFixesTypos ? static_cast<uint8_t>(4 - std::clamp(o.guessFixStrength, 0, 2)) : 0);
+        EngineSetFixMarks(bambooEngine_.handle(), o.guessFixesMarks ? 1 : 0);
         // A command or a file name typed three times is not a word the user means in a sentence.
         EngineSetCountingPlainWords(bambooEngine_.handle(), mayBeCommandLine() ? 0 : 1);
         // Earlier words are replaced only where the field shows they are still there.

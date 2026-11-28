@@ -252,6 +252,10 @@ msgid "Also fix syllables typed wrong"
 msgstr "Sửa cả âm tiết gõ sai"
 
 #: src/ngosen-config.h
+msgid "Also fix marks typed wrong (experimental)"
+msgstr "Sửa cả dấu gõ nhầm (thử nghiệm)"
+
+#: src/ngosen-config.h
 msgid "How boldly to fix"
 msgstr "Sửa mạnh tay đến đâu"
 
@@ -1736,6 +1740,10 @@ msgstr ""
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Type toi di hoc and get tôi đi học; a word can change again as the next ones come. Backspace right after a word puts it back as typed. Never in password fields."
 msgstr "Gõ toi di hoc ra tôi đi học; một chữ có thể đổi tiếp khi gõ các chữ sau. Bấm Backspace ngay sau chữ thì trả lại chữ như đã gõ. Không chạy trong ô mật khẩu."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "tôi gỗ phím becomes tôi gõ phím once phím is typed: a mark key typed wrong is fixed when the words around it clearly want another word. It puts right about one such slip in four and now and then changes a word typed on purpose; Backspace right after puts it back for good."
+msgstr "tôi gỗ phím thành tôi gõ phím khi gõ xong phím: phím dấu gõ nhầm được sửa khi các chữ xung quanh cho thấy rõ là chữ khác. Sửa được khoảng 1 trong 4 lỗi kiểu này, và thỉnh thoảng đổi nhầm một chữ cố ý gõ; bấm Backspace ngay sau đó thì trả lại và giữ luôn chữ đó."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "phmi becomes phím. Off, a syllable no word matches stays as typed."

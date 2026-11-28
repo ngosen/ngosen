@@ -362,6 +362,7 @@ namespace fcitx {
         Option<bool> guessFixesTypos{this, "GuessFixesTypos", _("Also fix syllables typed wrong"), ngosen::defaultOptions.guessFixesTypos};
         OptionWithAnnotation<FixStrength, FixStrengthI18NAnnotation> guessFixStrength{this, "GuessFixStrength", _("How boldly to fix"),
                                                                                       static_cast<FixStrength>(ngosen::defaultOptions.guessFixStrength)};
+        Option<bool> guessFixesMarks{this, "GuessFixesMarks", _("Also fix marks typed wrong (experimental)"), ngosen::defaultOptions.guessFixesMarks};
         Option<bool> guessInTerminals{this, "GuessInTerminals", _("Guess in terminals too"), ngosen::defaultOptions.guessInTerminals};
         Option<bool> learnDiacritics{this, "LearnDiacritics", _("Learn from what you type"), ngosen::defaultOptions.learnDiacritics};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};

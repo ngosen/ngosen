@@ -303,6 +303,7 @@ namespace {
         bool                                             doubleSpace    = false;
         bool                                             fixesTypos     = false;
         int                                              fixStrength    = 0;
+        bool                                             fixesMarks     = false;
         bool                                             guess          = true;
         bool                                             inTerminals    = false;
         bool                                             shorthand      = false;
@@ -327,6 +328,7 @@ namespace {
         resources.mutableOptions().doubleSpaceToPeriod  = run.doubleSpace;
         resources.mutableOptions().guessFixesTypos      = run.fixesTypos;
         resources.mutableOptions().guessFixStrength     = run.fixStrength;
+        resources.mutableOptions().guessFixesMarks      = run.fixesMarks;
         resources.mutableOptions().guessInTerminals     = run.inTerminals;
         resources.mutableOptions().chatShorthand        = run.shorthand;
         resources.mutableOptions().enableMacroInOffMode = run.macrosWhileOff;
@@ -494,6 +496,15 @@ namespace {
             check(text.rfind("gõ gõ", 0) == 0, "Đoán dấu: Ctrl+Backspace keeps such a fix" + name, text);
             text = typeGuessingInApp(reports, mode, "go ggo phim \bnay ", {.fixesTypos = true});
             check(text == "gõ ggo phím này ", "Đoán dấu: a word typed after that Backspace leaves the word as typed" + name, text);
+            // goox types gỗ; after tôi and with phím next, gõ is meant.
+            text = typeGuessingInApp(reports, mode, "toi goox phim ", {.fixesTypos = true, .fixesMarks = true});
+            check(text == "tôi gõ phím ", "Đoán dấu: a word typed with a mark key wrong is fixed once the next word ends" + name, text);
+            text = typeGuessingInApp(reports, mode, "toi goox phim ", {.fixesTypos = true});
+            check(text == "tôi gỗ phím ", "Đoán dấu: marks are fixed only when asked for" + name, text);
+            text = typeGuessingInApp(reports, mode, "toi goox phim ", {.fixesMarks = true});
+            check(text == "tôi gỗ phím ", "Đoán dấu: marks are fixed only with fixing on" + name, text);
+            text = typeGuessingInApp(reports, mode, "toi goox phim \b", {.fixesTypos = true, .fixesMarks = true});
+            check(text == "tôi gỗ phím ", "Đoán dấu: Backspace right after a marks fix brings back what was typed" + name, text);
             text = typeGuessingInApp(reports, mode, "ban \bf ");
             check(text == "bàn ", "Đoán dấu: Backspace reopens a guessed word, so a tone key changes it" + name, text);
             bool learned = false;

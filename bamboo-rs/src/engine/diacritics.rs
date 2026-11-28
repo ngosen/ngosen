@@ -19,8 +19,8 @@ const RAW_CONFIDENCE: f64 = 0.99;
 /// How often a word without marks that nothing knows is typed and left alone before it is learned
 /// as meant.
 const MEANT_AFTER: u8 = 3;
-/// How many times in a row a fixed word is put back as typed before it is learned so: Backspace
-/// right after a fix may just be deleting the word.
+/// How many times a fixed word is put back as typed before it is learned so: Backspace right
+/// after a fix may just be deleting the word.
 const KEPT_AFTER: u8 = 3;
 
 /// Whether keys hold a mark key after a vowel, as those of a word the engine took back do.
@@ -67,7 +67,7 @@ pub struct Learning {
     /// How often each word that could be meant was left alone. Kept in memory only, so a word
     /// typed once or twice never reaches the file.
     left_alone: Mutex<HashMap<String, u8>>,
-    /// How many times in a row each fixed word was put back as typed. Kept in memory only.
+    /// How many times each fixed word was put back as typed. Kept in memory only.
     put_back: Mutex<HashMap<String, u8>>,
 }
 
@@ -90,8 +90,7 @@ impl Learning {
         self.put_back.lock().unwrap_or_else(|e| e.into_inner())
     }
 
-    /// Counts a fixed word put back as typed; true once that happened often enough in a row to
-    /// keep it so.
+    /// Counts a fixed word put back as typed; true once that happened often enough to keep it so.
     fn kept(&self, word: &str) -> bool {
         let word = word.to_lowercase();
         let mut counts = self.put_back();
@@ -102,11 +101,6 @@ impl Learning {
             counts.remove(&word);
         }
         kept
-    }
-
-    /// A fix of a word was left alone, so putting it back starts counting again.
-    fn fix_left(&self, word: &str) {
-        self.put_back().remove(&word.to_lowercase());
     }
 
     /// Counts a word typed and left alone; true once that happened often enough to mean it.
@@ -184,7 +178,7 @@ pub struct Diacritics {
     learned: usize,
     /// Words of the run committed again as typed after their fix was undone: learned as typed.
     undone: Vec<usize>,
-    /// Words of the run put back as typed too few times in a row to learn: not learned at all.
+    /// Words of the run put back as typed too few times to learn: not learned at all.
     held: Vec<usize>,
     /// Words of the run a macro put there: the user did not type them, so they are never learned.
     from_macro: Vec<usize>,
@@ -410,8 +404,11 @@ impl Diacritics {
     }
 
     /// Word `at` of the run was put back as typed after its fix: learned so once that happened
-    /// often enough in a row, and not learned at all until then.
+    /// often enough, and not learned at all until then. A macro's word is never learned.
     fn put_back_as_typed(&mut self, at: usize) {
+        if self.from_macro.contains(&at) {
+            return;
+        }
         if self.learning.allows(self.run_epoch) && self.learning.kept(&self.typed[at]) {
             self.learn_as_typed(at);
         } else {
@@ -480,11 +477,11 @@ impl Diacritics {
             if !word.is_empty() {
                 let taken_back = !open && reopened.as_ref().is_some_and(|(w, _)| w == word);
                 self.push(word, keys, written || taken_back, near);
-                if taken_back {
-                    self.put_back_as_typed(self.typed.len() - 1);
-                }
                 if near.is_none() || taken_back && reopened.as_ref().is_some_and(|(_, m)| *m) {
                     self.from_macro.push(self.typed.len() - 1);
+                }
+                if taken_back {
+                    self.put_back_as_typed(self.typed.len() - 1);
                 }
                 self.field.push((word.to_string(), after));
                 open = true;
@@ -667,11 +664,6 @@ impl Diacritics {
                     .then_some(w.as_str())
             })
             .collect();
-        for (w, s) in (self.typed.iter().zip(shown).take(left)).skip(self.learned) {
-            if w != s {
-                self.learning.fix_left(w);
-            }
-        }
         if run.iter().any(Option::is_some) {
             // Checked under the lock a forget takes, so none comes between the check and the learning.
             let mut dictionary = lock(&self.dictionary);

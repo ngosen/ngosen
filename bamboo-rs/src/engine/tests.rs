@@ -2799,7 +2799,7 @@ fn later_fix_round(
 }
 
 #[test]
-fn a_later_fix_put_back_three_times_in_a_row_is_kept() {
+fn a_later_fix_put_back_three_times_is_kept() {
     let (dictionary, learning) = (shared_dictionary(), learning_on());
     for round in 1..=3 {
         let shown = later_fix_round(&dictionary, &learning, true);
@@ -2807,6 +2807,77 @@ fn a_later_fix_put_back_three_times_in_a_row_is_kept() {
     }
     let shown = later_fix_round(&dictionary, &learning, false);
     assert_eq!(shown, ["ta", "banfm", "phím"]);
+}
+
+#[test]
+fn a_last_word_fixed_before_punctuation_put_back_three_times_is_kept() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let typed = [("toi", ' '), ("go", ' '), ("phmi", '.')];
+    for round in 1..=3 {
+        let mut e = engine_sharing(&dictionary, &learning);
+        let mut field = Vec::new();
+        type_into(&mut e, &mut field, &typed);
+        assert_eq!(field[2], "phím", "round {round}");
+        assert!(undo_with_backspace(&mut e, &mut field));
+        commit_reopened(&mut e, &mut field);
+        type_into(&mut e, &mut field, &[("rat", '.')]);
+    }
+    let mut e = engine_sharing(&dictionary, &learning);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &typed);
+    assert_eq!(field[2], "phmi");
+}
+
+#[test]
+fn a_later_fix_before_punctuation_put_back_three_times_is_kept() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let typed = [("banfm", ' '), ("phim", '.')];
+    for round in 1..=3 {
+        let mut e = engine_sharing(&dictionary, &learning);
+        let mut field = Vec::new();
+        type_into(&mut e, &mut field, &typed);
+        assert_eq!(field, ["bàn", "phím"], "round {round}");
+        assert!(e.undo_earlier_fix().is_some());
+        e.reset();
+    }
+    let mut e = engine_sharing(&dictionary, &learning);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &typed);
+    assert_eq!(field, ["banfm", "phím"]);
+}
+
+fn go_near(_: &str) -> Vec<(String, f64)> {
+    vec![("gõ".to_string(), 1.0)]
+}
+
+/// Commits tôi and then ngo, a macro's text or typed, which is fixed; undoes the fix and commits
+/// ngo again unchanged.
+fn ngo_put_back(d: &mut Diacritics, typed: bool) {
+    let mut field = Vec::new();
+    d.committed("toi ", "toi ", true, &no_words_near, None);
+    field.push("toi".to_string());
+    let keys = if typed { "ngo " } else { "" };
+    d.committed("ngo ", keys, typed, &go_near, None);
+    field.push("ngo".to_string());
+    apply_changes(d.pull_changes(), &mut field);
+    assert_eq!(field, ["tôi", "gõ"], "fixed");
+    assert!(d.undo_fix().is_some());
+    d.committed("ngo.", "ngo.", true, &no_words_near, None);
+}
+
+#[test]
+fn a_macro_word_put_back_does_not_count_toward_keeping_a_word() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    for typed in [false, false, true] {
+        let mut d = Diacritics::new(Arc::clone(&dictionary), Arc::clone(&learning));
+        ngo_put_back(&mut d, typed);
+    }
+    let mut d = Diacritics::new(Arc::clone(&dictionary), Arc::clone(&learning));
+    let mut field = vec!["toi".to_string(), "ngo".to_string()];
+    d.committed("toi ", "toi ", true, &no_words_near, None);
+    d.committed("ngo ", "ngo ", true, &go_near, None);
+    apply_changes(d.pull_changes(), &mut field);
+    assert_eq!(field, ["tôi", "gõ"], "put back once only");
 }
 
 #[test]
@@ -2818,18 +2889,6 @@ fn forgetting_starts_the_count_again() {
     later_fix_round(&dictionary, &learning, true);
     let shown = later_fix_round(&dictionary, &learning, false);
     assert_eq!(shown, ["ta", "bàn", "phím"]);
-}
-
-#[test]
-fn a_fix_left_alone_starts_the_count_again() {
-    let (dictionary, learning) = (shared_dictionary(), learning_on());
-    for back in [true, true, false, true, true] {
-        let shown = later_fix_round(&dictionary, &learning, back);
-        assert_eq!(shown, ["ta", "bàn", "phím"]);
-    }
-    later_fix_round(&dictionary, &learning, true);
-    let shown = later_fix_round(&dictionary, &learning, false);
-    assert_eq!(shown, ["ta", "banfm", "phím"]);
 }
 
 #[test]

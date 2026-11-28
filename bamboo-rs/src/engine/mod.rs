@@ -1044,6 +1044,7 @@ impl BambooEngine {
             self.commits_abbreviation = abbreviation;
             if abbreviation {
                 self.unjudged = old_text.to_string();
+                self.shorthand.expanded(old_text, &expanded);
             }
             // After a comma or a full stop Backspace takes that key, as it does after any word.
             if abbreviation && key == ' ' {
@@ -1144,7 +1145,9 @@ impl BambooEngine {
             && let Some(mut d) = self.diacritics.take()
         {
             d.set_style(self.guess_style());
-            if written {
+            // An abbreviation kept as typed is the user's spelling, as one just taken back is.
+            let word = s.trim_end_matches(|c: char| !c.is_alphanumeric());
+            if written || self.shorthand.keeps(word) {
                 d.committed_as_written(&s);
             } else {
                 d.committed(&s, &self.raw_text(), typed, &|keys| self.words_near(keys));
@@ -1265,6 +1268,7 @@ impl BambooEngine {
             if !self.private_field
                 && let Some(d) = &mut self.diacritics
             {
+                d.erased_back();
                 d.reset();
             }
             return false;
@@ -1375,6 +1379,14 @@ impl BambooEngine {
         used
     }
 
+    /// Whether a key the engine forwards goes on from the last word, as Enter, Tab or a character
+    /// does. Backspace, Delete, an arrow or Ctrl+Z may be about to remove or change that word.
+    fn types_on(key_val: u32, state: u32) -> bool {
+        const FUNCTION_KEYS: u32 = 0xff00;
+        let ends_line = matches!(key_val, KEY_RETURN | KEY_KP_ENTER | KEY_TAB);
+        Self::is_valid_state(state) && (key_val < FUNCTION_KEYS || ends_line)
+    }
+
     fn handle_key_event(&mut self, key_val: u32, state: u32) -> bool {
         let has_preedit = !self.preedit_text.is_empty();
         // Commit and pass the key on, which Chrome's address bar and Google Sheets need.
@@ -1393,6 +1405,7 @@ impl BambooEngine {
                         self.commits_macro = true;
                         self.commits_abbreviation = abbreviation;
                         if abbreviation {
+                            self.shorthand.expanded(&word, &macro_text);
                             self.unjudged = word;
                         }
                         macro_text
@@ -1411,7 +1424,10 @@ impl BambooEngine {
             if !self.private_field
                 && let Some(d) = &mut self.diacritics
             {
-                d.ended_at_key();
+                if key_val == KEY_BACKSPACE && !has_preedit {
+                    d.erased_back();
+                }
+                d.ended_at_key(Self::types_on(key_val, state));
             }
             return false;
         }
@@ -1535,6 +1551,31 @@ impl BambooEngine {
     pub fn set_fixing(&mut self, margin: Option<f64>) {
         if let Some(d) = &mut self.diacritics {
             d.set_fixing(margin);
+        }
+    }
+
+    /// A key the front end keeps to itself typed on from the last word committed, as Enter or Tab
+    /// after a space does.
+    pub fn typed_on(&mut self) {
+        if !self.private_field
+            && let Some(d) = &mut self.diacritics
+        {
+            d.typed_on();
+        }
+    }
+
+    /// Backspace with a modifier, which the front end keeps to itself, erases back from the cursor.
+    pub fn erased_back(&mut self) {
+        if let Some(d) = &mut self.diacritics {
+            d.erased_back();
+        }
+    }
+
+    /// Whether words without marks that nothing knows count here toward being learned as meant.
+    /// A command line's are commands and file names.
+    pub fn set_counting_plain_words(&mut self, on: bool) {
+        if let Some(d) = &mut self.diacritics {
+            d.set_counting_plain(on);
         }
     }
 
@@ -1768,6 +1809,9 @@ impl BambooEngine {
         }
         let kept = expanded || self.left_as_typed.as_deref() == Some(text);
         let taken_back = (!text.is_empty() && kept).then(|| text.to_string());
+        if let Some(d) = &mut self.diacritics {
+            d.taken_back(text);
+        }
         self.rebuild_from_text(text);
         self.commits_macro = from_macro;
         self.commits_abbreviation = from_abbreviation;

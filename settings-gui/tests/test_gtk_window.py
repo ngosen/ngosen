@@ -301,14 +301,14 @@ class GtkMacroPageTest(unittest.TestCase):
 
     def test_the_chat_switch_saves_and_does_not_wait_for_the_macro_switch(self):
         row = self.page.switches["ChatShorthand"]
-        self.assertFalse(row.get_active())
+        self.assertTrue(row.get_active())
         self.assertIs(self.page.control_for("ChatShorthand"), row)
         self.assertEqual(row.get_subtitle(), HINTS["ChatShorthand"])
         self.page.switches["EnableMacro"].set_active(False)
         self.assertTrue(row.get_sensitive())
-        row.set_active(True)
-        self.assertEqual(self.dbus.values["ChatShorthand"], "True")
-        self.assertTrue(
+        row.set_active(False)
+        self.assertEqual(self.dbus.values["ChatShorthand"], "False")
+        self.assertFalse(
             window.Window(None, self.dbus).macros.switches["ChatShorthand"].get_active()
         )
 

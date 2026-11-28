@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import ast
+import io
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -89,8 +91,16 @@ class AfterInstallTest(unittest.TestCase):
         self.assertFalse(main.parse_args([]).after_install)
         self.assertTrue(main.parse_args(["--after-install"]).after_install)
 
-    def test_a_notification_can_open_the_guessing_page(self):
-        self.assertEqual(main.parse_args(["--page", "guessing"]).page, "guessing")
+    def test_every_page_a_notice_opens_is_accepted(self):
+        engine = (GUI_DIR.parent / "src" / "ngosen-engine.cpp").read_text(encoding="utf-8")
+        pages = set(re.findall(r'"--page", "([a-z-]+)"', engine))
+        self.assertLessEqual({"whats-new", "guessing"}, pages)
+        for page in sorted(pages):
+            with self.subTest(page=page), mock.patch.object(sys, "stderr", io.StringIO()):
+                try:
+                    self.assertEqual(main.parse_args(["--page", page]).page, page)
+                except SystemExit:
+                    self.fail("the window refuses this page")
 
     def test_opening_after_install_removes_the_one_time_entry(self):
         for argv, removed in ((["--after-install"], 1), ([], 0)):

@@ -105,18 +105,19 @@ class QtPageTest(unittest.TestCase):
     def test_the_switch_is_saved_and_read_back(self):
         fake = FakeDBusHandler()
         page = MacroEditorPage(fake)
-        self.assertFalse(page.cb_chat.isChecked())
+        self.assertTrue(page.cb_chat.isChecked())
         self.assertFalse(page.is_modified())
-        page.cb_chat.setChecked(True)
+        self.assertFalse(page.is_modified_from_default())
+        page.cb_chat.setChecked(False)
         self.assertTrue(page.is_modified())
         self.assertTrue(page.save_data())
-        self.assertEqual(fake.values["ChatShorthand"], "True")
+        self.assertEqual(fake.values["ChatShorthand"], "False")
         again = MacroEditorPage(fake)
-        self.assertTrue(again.cb_chat.isChecked())
-        self.assertEqual(again.value_of("ChatShorthand"), True)
+        self.assertFalse(again.cb_chat.isChecked())
+        self.assertEqual(again.value_of("ChatShorthand"), False)
         self.assertIs(again.control_for("ChatShorthand"), again.cb_chat)
         again.restore_defaults()
-        self.assertFalse(again.cb_chat.isChecked())
+        self.assertTrue(again.cb_chat.isChecked())
 
     def test_the_switch_does_not_wait_for_the_macro_switch(self):
         page = MacroEditorPage(FakeDBusHandler())
@@ -128,7 +129,7 @@ class QtPageTest(unittest.TestCase):
         page = MacroEditorPage(FakeDBusHandler())
         hints = [label.text() for label in page.findChildren(QLabel)]
         self.assertIn(
-            "ko gives không, dc gives được. Backspace right after one gives back what you typed.",
+            "ko gives không, dc gives được. Backspace right after the space gives back what you typed.",
             hints,
         )
 
@@ -243,7 +244,7 @@ class QtPageTest(unittest.TestCase):
         with open(po, encoding="utf-8") as f:
             text = f.read()
         for msgid in (
-            "ko gives không, dc gives được. Backspace right after one gives back what you typed.",
+            "ko gives không, dc gives được. Backspace right after the space gives back what you typed.",
             "View the list",
             "Hide the list",
             "Kept as typed",

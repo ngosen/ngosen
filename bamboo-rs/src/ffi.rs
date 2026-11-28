@@ -431,6 +431,24 @@ pub extern "C" fn ShorthandList(table: usize) -> *mut c_char {
     c_string(&lines.join("\n"))
 }
 
+/// Holds the next expansion from `table` for `ShorthandTakeFirstUse`.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandAwaitUse(table: usize) {
+    if let Some(shorthand) = handles::shorthand(table) {
+        shorthand.await_use();
+    }
+}
+
+/// The expansion `ShorthandAwaitUse` asked for, once: what was typed, a tab, what it became. Null
+/// until there is one.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandTakeFirstUse(table: usize) -> *mut c_char {
+    match handles::shorthand(table).and_then(|shorthand| shorthand.take_first_use()) {
+        Some((word, text)) => c_string(&format!("{word}\t{text}")),
+        None => std::ptr::null_mut(),
+    }
+}
+
 /// Expands the abbreviation `key` again after the user kept it as typed. Returns null, or why it
 /// failed.
 ///
@@ -667,6 +685,27 @@ pub extern "C" fn EngineEndWord(engine: usize) {
 pub extern "C" fn EngineSetFixing(engine: usize, margin: u8) {
     let margin = (margin != 0).then(|| f64::from(margin));
     handles::with_engine(engine, |e| e.set_fixing(margin));
+}
+
+/// Whether a word without marks that nothing knows, typed and left alone three times, is learned
+/// as meant in this field. Off until asked for.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetCountingPlainWords(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_counting_plain_words(on != 0));
+}
+
+/// Enter or Tab that the front end handles without the engine typed on from the last word, so
+/// the reset that follows does not take that word for one about to be removed.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineTypedOn(engine: usize) {
+    handles::with_engine(engine, |e| e.typed_on());
+}
+
+/// Backspace with a modifier, which the front end handles without the engine, may erase the word
+/// that was just counted as left alone.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineErasedBack(engine: usize) {
+    handles::with_engine(engine, |e| e.erased_back());
 }
 
 /// For Backspace right after the key that committed a fixed word: the text the field shows from

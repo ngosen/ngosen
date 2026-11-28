@@ -9,7 +9,7 @@ DEFAULTS = {
     "EnableMacro": True,
     "CapitalizeMacro": True,
     "EnableMacroInOffMode": False,
-    "ChatShorthand": False,
+    "ChatShorthand": True,
     "TimeFormat": "%H:%M",
     "DateFormat": "%d/%m/%Y",
 }

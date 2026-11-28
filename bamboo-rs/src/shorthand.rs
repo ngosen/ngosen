@@ -29,6 +29,10 @@ struct Kept {
     learning: bool,
     /// How many times in a row each abbreviation was taken back.
     taken_back: BTreeMap<String, u8>,
+    /// Whether the front end waits to hear of an expansion.
+    awaits_use: bool,
+    /// The expansion it waits for, once there is one: what was typed and what it became.
+    first_use: Option<(String, String)>,
 }
 
 impl Shorthand {
@@ -46,13 +50,36 @@ impl Shorthand {
     /// What `word` stands for, unless the user keeps it as typed.
     pub fn get(&self, word: &str) -> Option<&str> {
         let text = self.table.get(word)?;
+        (!self.keeps(word)).then_some(text)
+    }
+
+    /// Whether `word` is an abbreviation the user keeps as typed.
+    pub fn keeps(&self, word: &str) -> bool {
         let count = self.kept().taken_back.get(&word.to_lowercase()).copied();
-        (count.unwrap_or(0) < KEEP_AFTER).then_some(text)
+        self.table.get(word).is_some() && count.unwrap_or(0) >= KEEP_AFTER
     }
 
     /// Whether taking an abbreviation back is counted. Those already kept stay so.
     pub fn set_learning(&self, on: bool) {
         self.kept().learning = on;
+    }
+
+    /// Holds the next expansion for `take_first_use`.
+    pub fn await_use(&self) {
+        self.kept().awaits_use = true;
+    }
+
+    /// `word` was expanded to `text` in a field.
+    pub fn expanded(&self, word: &str, text: &str) {
+        let mut kept = self.kept();
+        if std::mem::take(&mut kept.awaits_use) {
+            kept.first_use = Some((word.to_string(), text.to_string()));
+        }
+    }
+
+    /// The expansion `await_use` asked for, once.
+    pub fn take_first_use(&self) -> Option<(String, String)> {
+        self.kept().first_use.take()
     }
 
     /// Reads the counts in `path` and writes them there from now on.
@@ -308,6 +335,23 @@ mod tests {
         assert_eq!(s.get("ko"), Some("không"));
         assert_eq!(fs::read_to_string(&path).unwrap(), "dc\t1\n");
         s.expand_again("ko").unwrap();
+    }
+
+    #[test]
+    fn the_first_expansion_is_held_only_when_asked_for() {
+        let s = shorthand(true);
+        s.expanded("ko", "không");
+        assert_eq!(s.take_first_use(), None);
+
+        s.await_use();
+        assert_eq!(s.take_first_use(), None);
+        s.expanded("Ko", "Không");
+        s.expanded("dc", "được");
+        let first = Some(("Ko".to_string(), "Không".to_string()));
+        assert_eq!(s.take_first_use(), first);
+        assert_eq!(s.take_first_use(), None);
+        s.expanded("dc", "được");
+        assert_eq!(s.take_first_use(), None);
     }
 
     #[test]

@@ -2331,6 +2331,18 @@ fn backspace_right_after_a_fix_reopens_the_word_as_typed() {
     );
     type_into(&mut e, &mut field, &[("rat", '.')]);
     assert_eq!(field[2], "phmi");
+    for round in 2..=3 {
+        let mut again = Vec::new();
+        type_into(
+            &mut e,
+            &mut again,
+            &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
+        );
+        assert_eq!(again[2], "phím", "not learned after {} times", round - 1);
+        assert!(undo_with_backspace(&mut e, &mut again));
+        commit_reopened(&mut e, &mut again);
+        type_into(&mut e, &mut again, &[("rat", '.')]);
+    }
     let mut again = Vec::new();
     type_into(
         &mut e,
@@ -2366,7 +2378,7 @@ fn backspace_after_the_punctuation_that_ended_the_run_reopens_the_word() {
         &mut again,
         &[("toi", ' '), ("go", ' '), ("phmi", ' ')],
     );
-    assert_eq!(again[2], "phmi");
+    assert_eq!(again[2], "phím", "not learned after once");
 }
 
 #[test]
@@ -2740,7 +2752,7 @@ fn undo_earlier_with_backspace(e: &mut BambooEngine, field: &mut Vec<String>) ->
 }
 
 #[test]
-fn backspace_right_after_a_later_fix_takes_it_back_for_good() {
+fn backspace_right_after_a_later_fix_takes_it_back() {
     let dictionary = shared_dictionary();
     let mut e = engine_on(&dictionary);
     let mut field = Vec::new();
@@ -2752,11 +2764,72 @@ fn backspace_right_after_a_later_fix_takes_it_back_for_good() {
     assert!(!undo_earlier_with_backspace(&mut e, &mut field), "once");
     type_into(&mut e, &mut field, &[("nay", '.')]);
     assert_eq!(field, ["ta", "banfm", "phím", "này"]);
-    // Learned as typed, so a later run leaves it alone.
     let mut later = engine_on(&dictionary);
     let mut field = Vec::new();
     type_into(&mut later, &mut field, &SHORT_THEN_SETTLED);
-    assert_eq!(field, ["ta", "banfm", "phím"]);
+    assert_eq!(field, ["ta", "bàn", "phím"], "not learned after once");
+}
+
+/// An engine on the same table and learning as another, as in another field.
+fn engine_sharing(
+    dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>,
+    learning: &Arc<Learning>,
+) -> BambooEngine {
+    let mut e = new_test_engine(&[], false);
+    e.set_diacritics(Arc::clone(dictionary), Arc::clone(learning));
+    e
+}
+
+/// Types `SHORT_THEN_SETTLED` in another field, puts its fix back when `back`, and ends the run.
+/// Returns what the field showed before that.
+fn later_fix_round(
+    dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>,
+    learning: &Arc<Learning>,
+    back: bool,
+) -> Vec<String> {
+    let mut e = engine_sharing(dictionary, learning);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &SHORT_THEN_SETTLED);
+    let shown = field.clone();
+    if back {
+        assert!(undo_earlier_with_backspace(&mut e, &mut field));
+    }
+    type_into(&mut e, &mut field, &[("nay", '.')]);
+    shown
+}
+
+#[test]
+fn a_later_fix_put_back_three_times_in_a_row_is_kept() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    for round in 1..=3 {
+        let shown = later_fix_round(&dictionary, &learning, true);
+        assert_eq!(shown, ["ta", "bàn", "phím"], "round {round}");
+    }
+    let shown = later_fix_round(&dictionary, &learning, false);
+    assert_eq!(shown, ["ta", "banfm", "phím"]);
+}
+
+#[test]
+fn forgetting_starts_the_count_again() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    later_fix_round(&dictionary, &learning, true);
+    later_fix_round(&dictionary, &learning, true);
+    learning.forgot();
+    later_fix_round(&dictionary, &learning, true);
+    let shown = later_fix_round(&dictionary, &learning, false);
+    assert_eq!(shown, ["ta", "bàn", "phím"]);
+}
+
+#[test]
+fn a_fix_left_alone_starts_the_count_again() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    for back in [true, true, false, true, true] {
+        let shown = later_fix_round(&dictionary, &learning, back);
+        assert_eq!(shown, ["ta", "bàn", "phím"]);
+    }
+    later_fix_round(&dictionary, &learning, true);
+    let shown = later_fix_round(&dictionary, &learning, false);
+    assert_eq!(shown, ["ta", "banfm", "phím"]);
 }
 
 #[test]
@@ -2794,7 +2867,7 @@ fn a_later_fix_is_taken_back_after_the_key_that_ended_its_run() {
     let mut later = engine_on(&dictionary);
     let mut field = Vec::new();
     type_into(&mut later, &mut field, &[("banfm", ' '), ("phim", '.')]);
-    assert_eq!(field, ["banfm", "phím"], "learned as typed");
+    assert_eq!(field, ["bàn", "phím"], "not learned after once");
 }
 
 #[test]
@@ -2886,19 +2959,22 @@ fn a_mistyped_word_is_still_fixed_from_keys_near_it_with_marks_on() {
 }
 
 #[test]
-fn backspace_after_a_marks_fix_keeps_the_word_from_then_on() {
-    let dictionary = shared_dictionary();
-    let mut e = marks_on(&dictionary);
+fn backspace_after_a_marks_fix_three_times_keeps_the_word() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    for round in 1..=3 {
+        let mut e = engine_sharing(&dictionary, &learning);
+        e.set_fix_marks(true);
+        let mut field = Vec::new();
+        type_into(&mut e, &mut field, &MARK_SLIPPED);
+        assert_eq!(field, ["tôi", "gõ", "phím"], "round {round}");
+        assert!(undo_earlier_with_backspace(&mut e, &mut field));
+        assert_eq!(field, ["tôi", "gỗ", "phím"]);
+        type_into(&mut e, &mut field, &[("nay", '.')]);
+    }
+    let mut e = engine_sharing(&dictionary, &learning);
+    e.set_fix_marks(true);
     let mut field = Vec::new();
     type_into(&mut e, &mut field, &MARK_SLIPPED);
-    assert_eq!(field, ["tôi", "gõ", "phím"]);
-    assert!(undo_earlier_with_backspace(&mut e, &mut field));
-    assert_eq!(field, ["tôi", "gỗ", "phím"]);
-    type_into(&mut e, &mut field, &[("nay", '.')]);
-    assert_eq!(field, ["tôi", "gỗ", "phím", "này"]);
-    let mut later = marks_on(&dictionary);
-    let mut field = Vec::new();
-    type_into(&mut later, &mut field, &MARK_SLIPPED);
     assert_eq!(field, ["tôi", "gỗ", "phím"], "learned as typed");
 }
 

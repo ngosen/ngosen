@@ -18,6 +18,7 @@ use bamboo_core::{
 };
 
 use crate::macro_table::MacroTable;
+use crate::shorthand::Shorthand;
 use crate::spelling::VietnameseSpelling;
 use crate::text::{
     Typed, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol, vowel_count,
@@ -340,6 +341,8 @@ impl WordFacts<'_> {
 pub struct BambooEngine {
     pub(crate) preeditor: Engine,
     pub(crate) macro_table: Arc<MacroTable>,
+    /// Chat abbreviations expanded for everyone; empty turns them off.
+    pub(crate) shorthand: Arc<Shorthand>,
     pub(crate) dictionary: Arc<Dictionary>,
     pub(crate) english_words: Arc<WordList>,
     /// Words whose keys may break a Vietnamese word on purpose; empty turns keeping words off.
@@ -348,7 +351,8 @@ pub struct BambooEngine {
     kept: Option<KeptWord>,
     /// Set for the next key only, where Backspace can bring the dropped keys back.
     pub(crate) drop_kept_tail: bool,
-    /// The word as shown before Space split it or dropped the keys after it.
+    /// The word as shown before Space split it, dropped the keys after it, or expanded it as a
+    /// chat abbreviation.
     pub(crate) dropped_word: String,
     pub(crate) auto_non_vn_restore: bool,
     pub(crate) dd_free_style: bool,
@@ -377,9 +381,21 @@ pub struct BambooEngine {
     committed_now: bool,
     /// The text about to be committed is a macro's, which Đoán dấu never learns.
     commits_macro: bool,
+    /// That text is a chat abbreviation's, which Đoán dấu leaves as written.
+    commits_abbreviation: bool,
+    /// The chat abbreviation the last key expanded with a space, as typed.
+    expanded_from: String,
+    /// The one the last commit expanded, until the next key shows the user left it in place.
+    unjudged: String,
+    /// A chat abbreviation taken back by Backspace: the open word stays as typed while it is this.
+    taken_back: Option<String>,
+    /// The one the last commit left as typed: taken back again, it stays so.
+    left_as_typed: Option<String>,
     /// Whether a macro put the last text committed there: text taken back from it is still the
     /// macro's.
     last_commit_macro: bool,
+    /// The same for a chat abbreviation.
+    last_commit_abbreviation: bool,
     /// A field that has been a password or sensitive field, which never reaches Đoán dấu again.
     pub(crate) private_field: bool,
 }
@@ -393,6 +409,7 @@ impl BambooEngine {
         Self {
             preeditor: Engine::with_config(input_method, default_config()),
             macro_table,
+            shorthand: Arc::default(),
             dictionary,
             english_words: Arc::default(),
             keep_guard: Arc::default(),
@@ -417,7 +434,13 @@ impl BambooEngine {
             earlier_fix_undoable: false,
             committed_now: false,
             commits_macro: false,
+            commits_abbreviation: false,
+            expanded_from: String::new(),
+            unjudged: String::new(),
+            taken_back: None,
+            left_as_typed: None,
             last_commit_macro: false,
+            last_commit_abbreviation: false,
             private_field: false,
         }
     }
@@ -441,13 +464,40 @@ impl BambooEngine {
         text
     }
 
-    fn get_macro_text(&self) -> Option<String> {
-        if !self.macro_enabled || self.macro_table.is_empty() {
+    fn is_own_macro(&self, word: &str) -> bool {
+        self.macro_enabled && self.macro_table.get(word).is_some()
+    }
+
+    /// What the chat abbreviation `word` stands for. One in capitals is a name of its own, as KO is.
+    fn abbreviation_text(&self, word: &str) -> Option<String> {
+        let text = self.shorthand.get(word)?;
+        match determine_macro_case(word) {
+            MacroCase::AllSmall => Some(text.to_string()),
+            MacroCase::Capitalized => Some(capitalize_first(text)),
+            MacroCase::AllCapital | MacroCase::NoChange => None,
+        }
+    }
+
+    /// What `word` expands to, and whether that is a chat abbreviation's text. The user's own
+    /// entry comes first.
+    fn expansion_of(&self, word: &str) -> Option<(String, bool)> {
+        if self.macro_enabled
+            && let Some(text) = self.macro_table.get(word)
+        {
+            return Some((self.expand_macro(word, text), false));
+        }
+        if self.taken_back.as_deref() == Some(word) {
             return None;
         }
-        let text = self.macro_word();
-        let macro_val = self.macro_table.get(&text)?;
-        Some(self.expand_macro(&text, macro_val))
+        Some((self.abbreviation_text(word)?, true))
+    }
+
+    fn macro_for(&self, word: &str) -> Option<String> {
+        self.expansion_of(word).map(|(text, _)| text)
+    }
+
+    fn get_macro_text(&self) -> Option<String> {
+        self.macro_for(&self.macro_word())
     }
 
     fn word_facts(&self) -> WordFacts<'_> {
@@ -466,7 +516,7 @@ impl BambooEngine {
         if vn_seq.is_empty() {
             return false;
         }
-        if self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some() {
+        if self.is_own_macro(&self.last_spaced_word()) {
             return false;
         }
         // dd stays đ even outside Vietnamese words, since abbreviations use it a lot.
@@ -517,7 +567,7 @@ impl BambooEngine {
             && self.spell_check_with_dicts
             && !self.dictionary.is_empty()
             && word.is_vietnamese_prefix()
-            && !(self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
+            && !self.is_own_macro(&self.last_spaced_word())
             && !(self.dd_free_style && vn_seq.contains('đ'))
             && has_any_vietnamese_rune(vn_seq)
             && !self.dictionary.starts_word(vn_seq)
@@ -562,7 +612,7 @@ impl BambooEngine {
             && self
                 .get_processed_string(OutputOptions::LOWER_CASE)
                 .is_empty()
-            && !(self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
+            && !self.is_own_macro(&self.last_spaced_word())
             && has_any_vietnamese_rune(&self.shown_as_composed())
             && self.must_fallback_to_english()
     }
@@ -580,11 +630,14 @@ impl BambooEngine {
             return word;
         }
         let word = self.word_facts();
+        // A chat abbreviation shows as its letters, while the keys after it compose as without it.
+        let abbreviation = self.abbreviation_text(&self.last_spaced_word()).is_some();
         let as_typed = self.keep_keys_until_next_key
-            || self.should_fallback_to_english(true, &word)
             || self.keys_start_english_over_name(&word)
-            || self.starts_no_dictionary_word(&word)
-            || self.word_before_digits_is_english();
+            || !abbreviation
+                && (self.should_fallback_to_english(true, &word)
+                    || self.starts_no_dictionary_word(&word)
+                    || self.word_before_digits_is_english());
         // Keys such as `aaaf` compose no mark to restore, yet still stretch à.
         if (as_typed || (self.auto_non_vn_restore && !word.is_vietnamese_prefix()))
             && let Some(word) = self.elongated_word()
@@ -985,12 +1038,19 @@ impl BambooEngine {
     }
 
     fn word_break_text(&mut self, key: char, old_text: &str) -> (String, bool) {
-        if self.macro_enabled
-            && let Some(macro_val) = self.macro_table.get(old_text)
-        {
-            let expanded = self.expand_macro(old_text, macro_val);
+        if let Some((expanded, abbreviation)) = self.expansion_of(old_text) {
             self.preeditor.reset();
             self.commits_macro = true;
+            self.commits_abbreviation = abbreviation;
+            if abbreviation {
+                self.unjudged = old_text.to_string();
+                self.shorthand.expanded(old_text, &expanded);
+            }
+            // After a comma or a full stop Backspace takes that key, as it does after any word.
+            if abbreviation && key == ' ' {
+                self.dropped_word = old_text.to_string();
+                self.expanded_from = old_text.to_string();
+            }
             return (format!("{expanded}{key}"), true);
         }
         if let Some(kept) = &self.kept {
@@ -1073,15 +1133,25 @@ impl BambooEngine {
 
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
         let typed = !std::mem::take(&mut self.commits_macro);
+        let written = std::mem::take(&mut self.commits_abbreviation);
+        let kept = self.taken_back.take();
         if !s.is_empty() {
+            self.left_as_typed = kept;
             self.last_commit_macro = !typed;
+            self.last_commit_abbreviation = written;
         }
         // Taken out while it asks this engine for the words near the keys.
         if !self.private_field
             && let Some(mut d) = self.diacritics.take()
         {
             d.set_style(self.guess_style());
-            d.committed(&s, &self.raw_text(), typed, &|keys| self.words_near(keys));
+            // An abbreviation kept as typed is the user's spelling, as one just taken back is.
+            let word = s.trim_end_matches(|c: char| !c.is_alphanumeric());
+            if written || self.shorthand.keeps(word) {
+                d.committed_as_written(&s);
+            } else {
+                d.committed(&s, &self.raw_text(), typed, &|keys| self.words_near(keys));
+            }
             self.diacritics = Some(d);
         }
         self.commit_text = s;
@@ -1198,6 +1268,7 @@ impl BambooEngine {
             if !self.private_field
                 && let Some(d) = &mut self.diacritics
             {
+                d.erased_back();
                 d.reset();
             }
             return false;
@@ -1291,6 +1362,11 @@ impl BambooEngine {
     /// Returns whether the key was used; the caller forwards it to the app otherwise.
     pub fn process_key_event(&mut self, key_val: u32, state: u32) -> bool {
         self.dropped_word.clear();
+        self.expanded_from.clear();
+        let unjudged = std::mem::take(&mut self.unjudged);
+        if !unjudged.is_empty() {
+            self.shorthand.accepted(&unjudged);
+        }
         self.fix_undoable = false;
         self.earlier_fix_undoable = false;
         self.committed_now = false;
@@ -1301,6 +1377,14 @@ impl BambooEngine {
         self.earlier_fix_undoable =
             fixing && (self.diacritics.as_ref()).is_some_and(Diacritics::can_undo_earlier);
         used
+    }
+
+    /// Whether a key the engine forwards goes on from the last word, as Enter, Tab or a character
+    /// does. Backspace, Delete, an arrow or Ctrl+Z may be about to remove or change that word.
+    fn types_on(key_val: u32, state: u32) -> bool {
+        const FUNCTION_KEYS: u32 = 0xff00;
+        let ends_line = matches!(key_val, KEY_RETURN | KEY_KP_ENTER | KEY_TAB);
+        Self::is_valid_state(state) && (key_val < FUNCTION_KEYS || ends_line)
     }
 
     fn handle_key_event(&mut self, key_val: u32, state: u32) -> bool {
@@ -1315,9 +1399,15 @@ impl BambooEngine {
             if has_preedit {
                 let enter = (key_val == KEY_RETURN || key_val == KEY_KP_ENTER)
                     && Self::is_valid_state(state);
-                let text = match self.get_macro_text() {
-                    Some(macro_text) if enter => {
+                let word = self.macro_word();
+                let text = match self.expansion_of(&word) {
+                    Some((macro_text, abbreviation)) if enter => {
                         self.commits_macro = true;
+                        self.commits_abbreviation = abbreviation;
+                        if abbreviation {
+                            self.shorthand.expanded(&word, &macro_text);
+                            self.unjudged = word;
+                        }
                         macro_text
                     }
                     // Gõ Sen keeps the word as shown on other keys, so Preedit fixes it on Enter only.
@@ -1334,7 +1424,10 @@ impl BambooEngine {
             if !self.private_field
                 && let Some(d) = &mut self.diacritics
             {
-                d.ended_at_key();
+                if key_val == KEY_BACKSPACE && !has_preedit {
+                    d.erased_back();
+                }
+                d.ended_at_key(Self::types_on(key_val, state));
             }
             return false;
         }
@@ -1458,6 +1551,31 @@ impl BambooEngine {
     pub fn set_fixing(&mut self, margin: Option<f64>) {
         if let Some(d) = &mut self.diacritics {
             d.set_fixing(margin);
+        }
+    }
+
+    /// A key the front end keeps to itself typed on from the last word committed, as Enter or Tab
+    /// after a space does.
+    pub fn typed_on(&mut self) {
+        if !self.private_field
+            && let Some(d) = &mut self.diacritics
+        {
+            d.typed_on();
+        }
+    }
+
+    /// Backspace with a modifier, which the front end keeps to itself, erases back from the cursor.
+    pub fn erased_back(&mut self) {
+        if let Some(d) = &mut self.diacritics {
+            d.erased_back();
+        }
+    }
+
+    /// Whether words without marks that nothing knows count here toward being learned as meant.
+    /// A command line's are commands and file names.
+    pub fn set_counting_plain_words(&mut self, on: bool) {
+        if let Some(d) = &mut self.diacritics {
+            d.set_counting_plain(on);
         }
     }
 
@@ -1681,9 +1799,23 @@ impl BambooEngine {
     /// Takes back text of the last commit to type on, as Backspace right after it does: a
     /// macro's text stays the macro's.
     pub fn reopen_committed(&mut self, text: &str) {
-        let from_macro = self.last_commit_macro;
+        let (from_macro, from_abbreviation) =
+            (self.last_commit_macro, self.last_commit_abbreviation);
+        let expanded = !text.is_empty() && self.expanded_from == text;
+        if expanded {
+            self.shorthand.taken_back(text);
+            self.expanded_from.clear();
+            self.unjudged.clear();
+        }
+        let kept = expanded || self.left_as_typed.as_deref() == Some(text);
+        let taken_back = (!text.is_empty() && kept).then(|| text.to_string());
+        if let Some(d) = &mut self.diacritics {
+            d.taken_back(text);
+        }
         self.rebuild_from_text(text);
         self.commits_macro = from_macro;
+        self.commits_abbreviation = from_abbreviation;
+        self.taken_back = taken_back;
     }
 
     pub fn rebuild_from_text(&mut self, text: &str) {

@@ -13,6 +13,9 @@ from core.ngosen_call import NO_REPLY, NOT_LOADED, NOT_RUNNING, TOO_OLD, CallErr
 # Where a run of typing started and ended, as timsen writes them.
 START, END = "<s>", "</s>"
 
+# Which chat abbreviations the user took back, as the engine names the file.
+KEPT_SHORTHAND = "kept-chat-shorthand"
+
 Status = namedtuple("Status", "line error table_missing")
 
 
@@ -33,6 +36,12 @@ def how_it_learns(file=None):
             "It learns words with marks that Ngó Sen put into a field: words you typed with"
             " marks, and words you kept as typed with Backspace after a wrong guess. Not words"
             " it guessed itself, and not text from macros."
+        ),
+        _(
+            "A word without marks that Ngó Sen does not know, such as a name or khum, is learned"
+            " once you typed it and went on typing three times, so fixing typos leaves it alone."
+            " Only words of 2 to 10 letters, only while typos are fixed, and not in a terminal."
+            " The count stays in memory and starts again when fcitx5 restarts."
         ),
         _(
             "It keeps runs of one, two and three words with how often each came, and where a"
@@ -57,6 +66,11 @@ def how_it_learns(file=None):
             "Kept in {} as plain text only you can read, saved every 5 minutes when there is"
             " something new and when fcitx5 quits. Nothing is sent anywhere."
         ).format(shown_path(file or path())),
+        _(
+            "A chat abbreviation you take back with Backspace twice in a row stays as typed."
+            " Which ones is kept in {}, counted while learning is on, with Đoán dấu on or off;"
+            " the Macros page lists them and can make one expand again."
+        ).format(shown_path(os.path.join(os.path.dirname(file or path()), KEPT_SHORTHAND))),
         _("The typing log is separate: it is written only when you choose Save typing log."),
     ]
 
@@ -86,10 +100,12 @@ def shown(found):
 
 
 def remove_files(file):
-    """Removes the file, its temporary copy and copies set aside as unreadable, as the engine does."""
+    """Removes the file, its temporary copy and copies set aside as unreadable, as the engine does.
+    The chat abbreviations kept as typed, counted beside it, go too."""
     folder, name = os.path.split(file)
     folder = folder or "."
-    for each in (file, os.path.join(folder, f".{name}.tmp")):
+    kept = os.path.join(folder, KEPT_SHORTHAND)
+    for each in (file, os.path.join(folder, f".{name}.tmp"), kept, kept + ".tmp"):
         try:
             os.remove(each)
         except FileNotFoundError:

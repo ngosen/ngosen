@@ -53,6 +53,7 @@ function(ngosen_headless_test_settings target)
         NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
         NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt"
         NGOSEN_TEST_KEEP_WORDS="${PROJECT_SOURCE_DIR}/data/keep-words.txt"
+        NGOSEN_TEST_CHAT_SHORTHAND="${PROJECT_SOURCE_DIR}/data/chat-shorthand.tsv"
     )
     target_link_libraries(${target} PRIVATE
         ngosen_core

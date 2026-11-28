@@ -280,6 +280,13 @@
     {}
    ],
    [
+    "ChatShorthand",
+    "Boolean",
+    "Expand chat abbreviations",
+    "True",
+    {}
+   ],
+   [
     "LockWordModifier",
     "Enum",
     "Key to Keep the Word as Typed",

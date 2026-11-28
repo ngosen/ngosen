@@ -178,6 +178,7 @@ inline void configureTestPaths(const char* name) {
     std::filesystem::copy_file(NGOSEN_TEST_DICTIONARY, root / "data/fcitx5/ngosen/vietnamese.cm.dict");
     std::filesystem::copy_file(NGOSEN_TEST_ENGLISH_WORDS, root / "data/fcitx5/ngosen/english-common.txt");
     std::filesystem::copy_file(NGOSEN_TEST_KEEP_WORDS, root / "data/fcitx5/ngosen/keep-words.txt");
+    std::filesystem::copy_file(NGOSEN_TEST_CHAT_SHORTHAND, root / "data/fcitx5/ngosen/chat-shorthand.tsv");
 }
 
 /**

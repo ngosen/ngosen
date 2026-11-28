@@ -156,6 +156,11 @@ namespace fcitx {
 #endif
         }
 
+        // Which chat abbreviations the user took back, and how often in a row.
+        std::string keptShorthandFile() {
+            return (userDataDir() / "kept-chat-shorthand").string();
+        }
+
         void migrateLegacyMode(RawConfig& config) {
             if (const auto* mode = config.valueByPath("Mode"); mode != nullptr && isFormerSenModeName(*mode)) {
                 config.setValueByPath("Mode", "Sen");
@@ -554,7 +559,26 @@ namespace fcitx {
             NGOSEN_WARN(std::string("Could not forget what Đoán dấu learned: ") + error.get());
             return {false, error.get()};
         }
+        const ngosen::UniqueCPtr<char> keptError(chatShorthand_ ? ShorthandForget(chatShorthand_.handle()) : ShorthandRemoveFile(keptShorthandFile().c_str()));
+        if (keptError) {
+            NGOSEN_WARN(std::string("Could not forget the chat abbreviations kept as typed: ") + keptError.get());
+            return {false, keptError.get()};
+        }
         NGOSEN_INFO("Đoán dấu forgot what it learned.");
+        return {true, ""};
+    }
+
+    std::string NgoSenEngine::chatShorthandList() const {
+        const ngosen::UniqueCPtr<char> list(ShorthandList(chatShorthand_.handle()));
+        return list ? list.get() : "";
+    }
+
+    std::pair<bool, std::string> NgoSenEngine::expandShorthandAgain(const std::string& key) {
+        const ngosen::UniqueCPtr<char> error(ShorthandExpandAgain(chatShorthand_.handle(), key.c_str()));
+        if (error) {
+            NGOSEN_WARN(std::string("Could not expand a chat abbreviation again: ") + error.get());
+            return {false, error.get()};
+        }
         return {true, ""};
     }
 
@@ -634,8 +658,13 @@ namespace fcitx {
                 }
             }
         }
-        loadWordList(englishWords_, "ngosen/english-common.txt");
-        loadWordList(keepWords_, "ngosen/keep-words.txt");
+        loadWordList(englishWords_, "ngosen/english-common.txt", NewWordList);
+        loadWordList(keepWords_, "ngosen/keep-words.txt", NewWordList);
+        const bool hadShorthand = static_cast<bool>(chatShorthand_);
+        loadWordList(chatShorthand_, "ngosen/chat-shorthand.tsv", NewShorthand);
+        // Read once: a count the file could not take is still held here.
+        if (chatShorthand_ && !hadShorthand)
+            ShorthandKeepIn(chatShorthand_.handle(), keptShorthandFile().c_str());
         loadAppRules();
         loadVimApps();
         loadWebTerminalApps();
@@ -646,7 +675,7 @@ namespace fcitx {
     }
 
     // The list changes only with the package, so a settings reload keeps it.
-    void NgoSenEngine::loadWordList(ngosen::CGoObject& list, const char* path) {
+    void NgoSenEngine::loadWordList(ngosen::CGoObject& list, const char* path, uintptr_t (*read)(uintptr_t fd)) {
         if (list)
             return;
 #if NGOSEN_USE_MODERN_FCITX_API
@@ -655,7 +684,7 @@ namespace fcitx {
         auto fd = StandardPath::global().open(StandardPath::Type::PkgData, path, O_RDONLY);
 #endif
         if (fd.isValid())
-            list.reset(NewWordList(fd.release()));
+            list.reset(read(fd.release()));
         else
             NGOSEN_WARN(std::string("Word list not found: ") + path);
     }
@@ -750,6 +779,38 @@ namespace fcitx {
 #endif
     }
 
+    void NgoSenEngine::announceShorthand() {
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        if (!chatShorthand_ || !options_.chatShorthand || *config_.chatShorthandAnnounced)
+            return;
+        if (!awaitsShorthandUse_) {
+            ShorthandAwaitUse(chatShorthand_.handle());
+            awaitsShorthandUse_ = true;
+        }
+        const ngosen::UniqueCPtr<char> first(ShorthandTakeFirstUse(chatShorthand_.handle()));
+        if (!first)
+            return;
+        awaitsShorthandUse_ = false;
+        auto* addon         = notifications();
+        if (addon == nullptr) {
+            NGOSEN_WARN("No notifications addon; the first chat abbreviation is not announced");
+            return;
+        }
+        std::string title = first.get();
+        if (const auto tab = title.find('\t'); tab != std::string::npos)
+            title.replace(tab, 1, " → ");
+        constexpr int32_t neverExpire = 0;
+        addon->call<INotifications::sendNotification>(
+            "fcitx", 0, "fcitx-ngosen", title,
+            _("Ngó Sen expanded a chat abbreviation. Press Backspace right after the space to get back what you typed. See the list or turn "
+              "this off on the Macros page."),
+            std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "macros"}); }, [](uint32_t) {});
+        // Marked only once sent, so a session without notifications tries again next time.
+        config_.chatShorthandAnnounced.setValue(true);
+        saveConfig();
+#endif
+    }
+
     const Configuration* NgoSenEngine::getSubConfig(const std::string& path) const {
         if (path == "custom_keymap")
             return &customKeymap_;
@@ -795,7 +856,13 @@ namespace fcitx {
     void NgoSenEngine::setConfig(const RawConfig& config) {
         RawConfig migrated = config;
         migrateLegacyMode(migrated);
+        // A settings window that read the marks before a notice went out writes the old ones back.
+        const bool toldLearning = *config_.learningAnnounced, toldShorthand = *config_.chatShorthandAnnounced;
         config_.load(migrated, true);
+        if (toldLearning)
+            config_.learningAnnounced.setValue(true);
+        if (toldShorthand)
+            config_.chatShorthandAnnounced.setValue(true);
         saveConfig();
         populateConfig();
     }
@@ -820,6 +887,7 @@ namespace fcitx {
         o.enableMacro                    = config_.enableMacro.value();
         o.enableMacroInOffMode           = config_.enableMacroInOffMode.value();
         o.capitalizeMacro                = config_.capitalizeMacro.value();
+        o.chatShorthand                  = config_.chatShorthand.value();
         o.autoCapitalizeAfterPunctuation = config_.autoCapitalizeAfterPunctuation.value();
         o.capitalizeStartOfText          = config_.capitalizeStartOfText.value();
         o.doubleSpaceToPeriod            = config_.doubleSpaceToPeriod.value();
@@ -866,7 +934,10 @@ namespace fcitx {
         // Kept open while Đoán dấu is off, so it learns nothing then either.
         if (diacritics_)
             DiacriticsSetLearning(diacritics_.handle(), options_.guessDiacritics && options_.learnDiacritics ? 1 : 0);
+        if (chatShorthand_)
+            ShorthandSetLearning(chatShorthand_.handle(), options_.learnDiacritics ? 1 : 0);
         announceLearning();
+        announceShorthand();
         refreshEngine();
         refreshOption();
         updateInputMethodAction(nullptr);
@@ -1065,6 +1136,8 @@ namespace fcitx {
         auto*                 state = stateFor(keyEvent.inputContext());
         ngosen::FcitxKeyPress press(keyEvent);
         state->keyEvent(press);
+        if (awaitsShorthandUse_)
+            announceShorthand();
     }
 
     bool modeMenuCanDraw(const std::string& currentUi, const std::string& frontend, const std::string& display, bool clientDrawsPanel) {

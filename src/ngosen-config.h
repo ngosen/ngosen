@@ -326,6 +326,8 @@ namespace fcitx {
         HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0};
         // Set once the notification that Đoán dấu learns was shown.
         HiddenOption<bool> learningAnnounced{this, "LearningAnnounced", _("Learning Announced"), false};
+        // Set once the notification about the first chat abbreviation expanded was shown.
+        HiddenOption<bool> chatShorthandAnnounced{this, "ChatShorthandAnnounced", _("Chat Abbreviations Announced"), false};
         // The last feature release (X.Y) whose "What's new" notification was shown.
         HiddenOption<std::string> announcedVersion{this, "AnnouncedVersion", _("Announced Version"), ""}; KeyListOption modeMenuKey{
             this, "ModeMenuKey", _("Mode Menu Hotkey"), {Key("grave")}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
@@ -345,6 +347,7 @@ namespace fcitx {
 
         Option<bool>                                                                   enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
         Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"), ngosen::defaultOptions.capitalizeMacro};
+        Option<bool> chatShorthand{this, "ChatShorthand", _("Expand chat abbreviations"), ngosen::defaultOptions.chatShorthand};
         OptionWithAnnotation<LockWordModifier, LockWordModifierI18NAnnotation> lockWordModifier{this, "LockWordModifier", _("Key to Keep the Word as Typed"),
                                                                                                 static_cast<LockWordModifier>(ngosen::defaultOptions.lockWordKey)};
         Option<bool> autoCapitalizeAfterPunctuation{this, "AutoCapitalizeAfterPunctuation", _("Auto capitalize after sentence-ending punctuation (. ! ? Enter)"),

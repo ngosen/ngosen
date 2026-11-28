@@ -34,6 +34,12 @@ def kept_line(entries):
 
 def app_hint(value_of):
     """How to turn the abbreviations off in one app, with the keys the user set."""
+    # Off everywhere, the menu has no such item; an fcitx5 without the key has no row for it.
+    if (
+        str(value_of("ChatShorthand")).lower() == "false"
+        or value_of("ShortcutChatShorthand") is None
+    ):
+        return ""
     menu_keys = value_of("ModeMenuKey") or []
     keys = list(menu_keys.values()) if isinstance(menu_keys, dict) else list(menu_keys)
     menu = "+".join(pretty_format_hotkey_parts(keys[0])) if keys else ""

@@ -259,7 +259,9 @@ class MacroEditorPage(BaseEditorPage):
     def _show_app_hint(self):
         # The Keys page keeps its own copy of the settings, so ask fcitx5.
         values = (self.dbus.get_config() or {}).get("values") or {}
-        self.chat_app_hint.setText(chat_shorthand.app_hint(values.get))
+        hint = chat_shorthand.app_hint(values.get)
+        self.chat_app_hint.setText(hint)
+        self.chat_app_hint.setVisible(bool(hint))
 
     def _show_chat(self, opening=False):
         entries, why = self.chat.entries()

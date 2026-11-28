@@ -319,6 +319,11 @@ class GtkMacroPageTest(unittest.TestCase):
         self.page.refresh_status()
         self.assertIn("press ` then x", self.page.chat_group.get_description())
 
+    def test_the_chat_group_has_no_hint_while_they_are_off(self):
+        self.dbus.values["ChatShorthand"] = "False"
+        self.page.refresh_status()
+        self.assertFalse(self.page.chat_group.get_description())
+
     def test_the_chat_list_says_why_it_is_empty(self):
         self.assertEqual(
             self.page.chat_list.get_subtitle(),

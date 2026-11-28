@@ -61,6 +61,15 @@ class AppHintTest(unittest.TestCase):
         ):
             self.assertIn("Keys page", self.hint(**values), values)
 
+    def test_no_hint_while_they_are_off_or_fcitx5_has_no_key_for_them(self):
+        # Off everywhere, the menu has no such item; an older fcitx5 has no key to name.
+        for values in (
+            {"ChatShorthand": "False"},
+            {"ChatShorthand": False},
+            {"ShortcutChatShorthand": None},
+        ):
+            self.assertEqual(self.hint(**values), "", values)
+
 
 class CallsTest(unittest.TestCase):
     def test_the_entries_come_from_the_running_ngosen(self):
@@ -159,6 +168,15 @@ class QtPageTest(unittest.TestCase):
         fake.values["ShortcutChatShorthand"] = "x"
         page.refresh_status()
         self.assertIn("press ` then x", page.chat_app_hint.text())
+
+    def test_the_page_hides_the_hint_while_they_are_off(self):
+        fake = FakeDBusHandler()
+        fake.values["ChatShorthand"] = "False"
+        page = MacroEditorPage(fake)
+        self.assertTrue(page.chat_app_hint.isHidden())
+        fake.values["ChatShorthand"] = "True"
+        page.refresh_status()
+        self.assertFalse(page.chat_app_hint.isHidden())
 
     def test_the_line_names_the_kept_keys(self):
         self.assertEqual(self.page(ChatEngine()).chat_line.text(), "None is kept as typed.")

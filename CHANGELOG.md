@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
-- Trang cài file `.deb` trong App Center của Ubuntu hiện tên "NgoSen" thay vì "Ng? Sen": App Center không đọc được chữ có dấu trong mô tả gói.
+- Trang cài file `.deb` trong App Center của Ubuntu hiện tên "NgoSen" thay vì "Ng? Sen": App Center không đọc được chữ có dấu trong mô tả gói (#1057).
 
 ## [1.14.4-1] — 27/11/2026
 

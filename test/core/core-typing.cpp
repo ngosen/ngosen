@@ -1321,7 +1321,6 @@ namespace {
         const std::vector<std::pair<std::string, Field>> keptAsTyped{
             {"a terminal", terminal},
             {"a terminal that sets no terminal flag", makeField("wayland", true, "org.kde.konsole")},
-            {"an editor whose terminal sets no flag", makeField("wayland", true, "code")},
             {"a password field", password},
             {"an address bar", address},
         };
@@ -1335,6 +1334,8 @@ namespace {
             check(text == "ko dc ", "chat shorthand: off in an app the user turned it off for" + name, text);
             text = typeGuessingInApp(makeField("wayland", true, "firefox"), mode, "ko ", {.shorthand = true});
             check(text == "không ", "chat shorthand: on in a browser, though a page may show a terminal" + name, text);
+            text = typeGuessingInApp(makeField("wayland", true, "code"), mode, "ko ", {.shorthand = true});
+            check(text == "không ", "chat shorthand: on in an editor that holds a terminal" + name, text);
             text = typeGuessingInApp(reports, mode, "ko ", {.shorthand = true, .macros = {{"ko", "kansas"}}});
             check(text == "kansas ", "chat shorthand: the user's own macro wins" + name, text);
             for (const auto& [where, field] : keptAsTyped) {
@@ -1394,6 +1395,10 @@ namespace {
             check(text == "ko ko ", "chat shorthand: the count carries over a restart" + name, text);
             std::filesystem::remove(kept);
         }
+        // The first word shows how the field behaves, and may itself still expand.
+        const std::string inTerminal =
+            typeGuessingInApp(makeField("wayland", true, "code"), ngosen::Mode::Sen, "laf ko dc ", {.quirks = {.keepsOnlyCommits = true}, .shorthand = true});
+        check(inTerminal == "là ko dc ", "chat shorthand: off in an editor's terminal, which shows no typed letter", inTerminal);
         const std::string text = typeGuessingInApp(reports, ngosen::Mode::Off, "e ko ", {.shorthand = true, .macrosWhileOff = true, .macros = {{"e", "em"}}});
         check(text == "em ko ", "chat shorthand: off while Vietnamese is off, where the user's macros still expand", text);
     }

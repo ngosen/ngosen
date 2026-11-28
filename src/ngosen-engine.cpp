@@ -2126,7 +2126,7 @@ namespace fcitx {
             }
             if (info.shorthand) {
                 // Nothing expands on a command line, so there is nothing to switch.
-                if (!stateFor(ic)->mayBeCommandLine())
+                if (!stateFor(ic)->isCommandLine())
                     appendSwitch(info, shorthandMenuKey_, chatShorthandOnFor(currentConfigureApp_) ? _("Chat abbreviations: on") : _("Chat abbreviations: off"),
                                  &NgoSenEngine::toggleChatShorthand);
                 continue;

@@ -102,10 +102,15 @@ namespace ngosen {
         EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && s.isValid() && !s.text().empty() ? 1 : 0);
     }
 
-    // An editor whose terminal cannot be told from its other fields counts as a command line throughout.
-    bool TypingState::mayBeCommandLine() const {
+    // An editor's terminal shows no typed letter in its text, which tells it from the editor's other fields.
+    bool TypingState::isCommandLine() const {
         const Field field = host_->field();
-        return field.terminal || ngosen::runsShellOnPty(field) || marksEachField();
+        return field.terminal || ngosen::runsShellOnPty(field) || (marksEachField() && keepsOnlyCommits());
+    }
+
+    // Before a field has shown how it behaves, an editor that holds a terminal counts as one throughout.
+    bool TypingState::mayBeCommandLine() const {
+        return isCommandLine() || marksEachField();
     }
 
     // Abbreviations belong to text written for people: a command, an address or a password keeps its letters.
@@ -114,7 +119,7 @@ namespace ngosen {
         // Backspace gives the typed key back by deleting the expansion, which a preedit needs the field's text for.
         const bool givesBack = mode() != ngosen::Mode::Preedit || field.surroundingText;
         const bool here      = engine_->options().chatShorthand && shorthandOn_ && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() &&
-            !mayBeCommandLine() && givesBack;
+            !isCommandLine() && givesBack;
         const uintptr_t wanted = here ? engine_->chatShorthand() : 0;
         if (wanted == shorthand_)
             return;

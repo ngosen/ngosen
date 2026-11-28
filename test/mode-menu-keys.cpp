@@ -288,6 +288,17 @@ int main() {
         check(list && list->totalSize() == 7, "a terminal's menu has no chat abbreviation switch", list ? std::to_string(list->totalSize()) : "no menu");
         press(engine, entry, *terminal, FcitxKey_Escape);
         terminal->focusOut();
+
+        auto editor = std::make_unique<TestInputContext>(&testInstance.instance, "code");
+        editor->setCapabilityFlags({fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::SurroundingText});
+        editor->focusIn();
+        fcitx::InputContextEvent editorFocus(editor.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, editorFocus);
+        press(engine, entry, *editor, FcitxKey_grave);
+        list = menu(*editor);
+        check(list && list->totalSize() == 8, "an editor that holds a terminal has the switch", list ? std::to_string(list->totalSize()) : "no menu");
+        press(engine, entry, *editor, FcitxKey_Escape);
+        editor->focusOut();
         context->focusIn();
         engine.activate(entry, focus);
     }

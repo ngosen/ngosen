@@ -126,8 +126,8 @@ namespace ngosen {
         void setShorthandOn(bool on) {
             shorthandOn_ = on;
         }
-        // Whether what is typed here may be a command, which no abbreviation changes.
-        bool mayBeCommandLine() const;
+        // Whether what is typed here goes to a shell, which no abbreviation changes.
+        bool isCommandLine() const;
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
@@ -1071,6 +1071,7 @@ namespace ngosen {
         bool         keepsOnlyCommits() const;
         bool         mayShowWebTerminal() const;
         bool         marksEachField() const;
+        bool         mayBeCommandLine() const;
         void         checkFirstLetters();
         void         resetLetterCheckOnFieldChange();
         std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held

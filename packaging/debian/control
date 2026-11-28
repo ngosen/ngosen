@@ -28,5 +28,5 @@ Architecture: any
 # install, as install.sh does on GNOME, Cinnamon and Xfce. Qt draws no icons without the SVG plugin,
 # which Debian 13 moved from libqt6svg6 to qt6-svg-plugins.
 Depends: fcitx5, fcitx5-data, libxcb1, libxcb-xfixes0, libxcb-xtest0, libxcb-xinput0, python3-dbus, python3-gi, python3-qtpy | python3-pyqt6 | gir1.2-adw-1 (>= 1.5), python3-pyqt6 | python3-pyside6.qtwidgets | python3-pyqt5 | gir1.2-adw-1 (>= 1.5), qt6-svg-plugins | libqt6svg6 | gir1.2-adw-1 (>= 1.5), ${misc:Depends}, ${shlibs:Depends}, ${python3:Depends}
-Description: Ngó Sen, a Vietnamese input method for fcitx5
- Ngó Sen is a Vietnamese input method for fcitx5.
+Description: NgoSen, a Vietnamese input method for fcitx5
+ NgoSen is a Vietnamese input method for fcitx5.

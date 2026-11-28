@@ -102,10 +102,21 @@ namespace ngosen {
         EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && s.isValid() && !s.text().empty() ? 1 : 0);
     }
 
-    // An editor whose terminal cannot be told from its other fields counts as a command line throughout.
-    bool TypingState::mayBeCommandLine() const {
+    // A terminal by its flag or name, or an app that is no editor and showed a terminal's field.
+    bool TypingState::isCommandLine() const {
         const Field field = host_->field();
-        return field.terminal || ngosen::runsShellOnPty(field) || marksEachField();
+        return field.terminal || ngosen::runsShellOnPty(field) || engine_->showedWebTerminal(field.program);
+    }
+
+    // An editor's terminal reports a commit without the letters typed before it, as none of its other fields do.
+    // A report that only comes late proves nothing, so this waits for one that came.
+    bool TypingState::inEditorTerminal() const {
+        return ngosen::isElectronCodeEditor(host_->field()) && !sinceFocus_.letterShown && sinceFocus_.lettersHidden > 0;
+    }
+
+    // Before a field has shown how it behaves, an editor that holds a terminal counts as one throughout.
+    bool TypingState::mayBeCommandLine() const {
+        return isCommandLine() || marksEachField();
     }
 
     // Abbreviations belong to text written for people: a command, an address or a password keeps its letters.
@@ -113,8 +124,8 @@ namespace ngosen {
         const Field field = host_->field();
         // Backspace gives the typed key back by deleting the expansion, which a preedit needs the field's text for.
         const bool givesBack = mode() != ngosen::Mode::Preedit || field.surroundingText;
-        const bool here =
-            engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() && !mayBeCommandLine() && givesBack;
+        const bool here      = engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() && !isCommandLine() &&
+            !inEditorTerminal() && givesBack;
         const uintptr_t wanted = here ? engine_->chatShorthand() : 0;
         if (wanted == shorthand_)
             return;

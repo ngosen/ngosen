@@ -113,7 +113,9 @@ Hoàn tác.
   liền thì từ đó Ngó Sen để nguyên. Trang **Gõ tắt** trong cửa sổ cài đặt có danh sách các chữ viết tắt,
   nút **Bung lại** cho chữ đang để nguyên, và công tắc **Bung chữ viết tắt khi chat** để tắt hẳn. Không bung
   trong terminal, ô mật khẩu, ô địa chỉ (Firefox không báo đâu là ô địa chỉ, nên ở đó thường vẫn bung), và
-  ở kiểu gõ gạch chân trong app không báo chữ cho bộ gõ, vì ở đó Backspace không lấy lại được.
+  ở kiểu gõ gạch chân trong app không báo chữ cho bộ gõ, vì ở đó Backspace không lấy lại được. Trong
+  VS Code và các trình soạn code cùng họ, chữ viết tắt bung ở ô soạn thảo; terminal gắn sẵn thì Ngó Sen
+  nhận ra từ chữ thứ hai gõ vào đó ở kiểu Gõ Sen, còn ở kiểu gõ gạch chân thì chưa nhận ra được.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.
 
@@ -128,6 +130,10 @@ báo của desktop.
 
 - **Học gì:** chữ có dấu mà Ngó Sen đã đưa vào ô, gồm chữ bạn tự gõ có dấu và chữ bạn bấm Backspace để giữ
   nguyên như đã gõ sau khi đoán sai. Không học chữ máy tự đoán, không học chữ bung ra từ gõ tắt.
+- **Chữ không dấu gõ cố ý:** chữ không dấu mà Ngó Sen chưa biết, như tên riêng hay `khum`, được học sau
+  ba lần bạn gõ nó rồi gõ tiếp, để phần sửa âm tiết gõ sai không đổi nó nữa. Chỉ chữ dài 2 đến 10 chữ
+  cái, chỉ khi đang bật **Sửa cả âm tiết gõ sai**, và không học trong terminal. Số đếm chỉ nằm trong bộ
+  nhớ; khởi động lại fcitx5 thì đếm lại từ đầu.
 - **Lưu gì:** các cụm 1, 2 và 3 chữ liền nhau kèm số lần gặp, cả chỗ bắt đầu và kết thúc một đoạn gõ.
   Ghép các cụm lại có thể đọc ra những câu ngắn bạn đã gõ.
 - **Khi nào:** khi một đoạn gõ kết thúc: rời ô, bấm chuột, nhấn Enter, hoặc gõ đủ 200 âm tiết. Chữ gõ rồi

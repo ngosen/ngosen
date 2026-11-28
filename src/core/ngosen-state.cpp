@@ -95,19 +95,37 @@ namespace ngosen {
         const ngosen::Options& o = engine_->options();
         // The margin a fix must win by: 4, 3 or 2 from cautious to strong.
         EngineSetFixing(bambooEngine_.handle(), o.guessFixesTypos ? static_cast<uint8_t>(4 - std::clamp(o.guessFixStrength, 0, 2)) : 0);
+        // A command or a file name typed three times is not a word the user means in a sentence.
+        EngineSetCountingPlainWords(bambooEngine_.handle(), mayBeCommandLine() ? 0 : 1);
         // Earlier words are replaced only where the field shows they are still there.
         const Surrounding s = host_->surrounding();
         EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && s.isValid() && !s.text().empty() ? 1 : 0);
     }
 
+    // A terminal by its flag or name, or an app that is no editor and showed a terminal's field.
+    bool TypingState::isCommandLine() const {
+        const Field field = host_->field();
+        return field.terminal || ngosen::runsShellOnPty(field) || engine_->showedWebTerminal(field.program);
+    }
+
+    // An editor's terminal reports a commit without the letters typed before it, as none of its other fields do.
+    // A report that only comes late proves nothing, so this waits for one that came.
+    bool TypingState::inEditorTerminal() const {
+        return ngosen::isElectronCodeEditor(host_->field()) && !sinceFocus_.letterShown && sinceFocus_.lettersHidden > 0;
+    }
+
+    // Before a field has shown how it behaves, an editor that holds a terminal counts as one throughout.
+    bool TypingState::mayBeCommandLine() const {
+        return isCommandLine() || marksEachField();
+    }
+
     // Abbreviations belong to text written for people: a command, an address or a password keeps its letters.
     void TypingState::syncShorthand() {
         const Field field = host_->field();
-        // An editor whose terminal cannot be told from its other fields counts as a command line throughout.
-        const bool commandLine = field.terminal || ngosen::runsShellOnPty(field) || marksEachField();
         // Backspace gives the typed key back by deleting the expansion, which a preedit needs the field's text for.
         const bool givesBack = mode() != ngosen::Mode::Preedit || field.surroundingText;
-        const bool here = engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() && !commandLine && givesBack;
+        const bool here      = engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() && !isCommandLine() &&
+            !inEditorTerminal() && givesBack;
         const uintptr_t wanted = here ? engine_->chatShorthand() : 0;
         if (wanted == shorthand_)
             return;
@@ -303,6 +321,10 @@ namespace ngosen {
             current_backspace_count_ = 0;
             pending_commit_string_.clear();
             hasHistory_ = false;
+            if ((currentSym == ngosen::key::Tab || currentSym == ngosen::key::KP_Tab) && !keyEvent.hasModifier())
+                EngineTypedOn(bambooEngine_.handle());
+            if (ngosen::key::isBackspace(currentSym) && oldPreBuffer_.empty())
+                EngineErasedBack(bambooEngine_.handle());
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             noteVimSpecialKey(keyEvent, currentSym);
@@ -409,6 +431,7 @@ namespace ngosen {
                 if (finishWordBeforeEnter(keyEvent))
                     return;
                 hasHistory_ = false;
+                EngineTypedOn(bambooEngine_.handle());
                 ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
             }

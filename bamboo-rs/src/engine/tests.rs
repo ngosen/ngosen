@@ -3458,3 +3458,246 @@ fn restoring_text_needs_diacritics() {
     let e = new_test_engine(&[], false);
     assert_eq!(e.restore_text("toi go phim"), None);
 }
+
+/// Đoán dấu for a field that counts words without marks, as the front end asks for outside a
+/// command line.
+fn counting(
+    dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>,
+    learning: &Arc<Learning>,
+) -> Diacritics {
+    let mut d = Diacritics::new(Arc::clone(dictionary), Arc::clone(learning));
+    d.set_counting_plain(true);
+    d
+}
+
+/// Types `word` as a sentence of its own, `times` times.
+fn type_alone(d: &mut Diacritics, word: &str, times: usize) {
+    let sentence = format!("{word}.");
+    for _ in 0..times {
+        d.committed(&sentence, &sentence, true, &no_words_near);
+    }
+}
+
+/// Whether a run started now would leave `word` alone as a word it knows.
+fn knows(dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>, word: &str) -> bool {
+    let typing = dictionary.lock().unwrap().typing();
+    !timsen::Run::new(typing, 0.99)
+        .fixing(Some(timsen::FIX_MARGIN))
+        .may_fix(word)
+}
+
+#[test]
+fn a_plain_word_nothing_knows_is_learned_the_third_time_it_is_left_alone() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut d = counting(&dictionary, &learning);
+    assert!(!knows(&dictionary, "khum"));
+    type_alone(&mut d, "khum", 2);
+    assert!(dictionary.lock().unwrap().is_empty(), "twice is not meant");
+    // The count is the user's, whichever field and whichever capitals.
+    type_alone(&mut counting(&dictionary, &learning), "Khum", 1);
+    assert!(knows(&dictionary, "khum"));
+    let mut saved = Vec::new();
+    dictionary.lock().unwrap().save(&mut saved).unwrap();
+    let saved = String::from_utf8(saved).unwrap();
+    assert!(saved.contains("khum"), "the file, which View reads, has it");
+}
+
+#[test]
+fn a_word_is_left_alone_only_once_the_user_typed_on() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut d = counting(&dictionary, &learning);
+    for _ in 0..3 {
+        d.committed("khum ", "khum ", true, &no_words_near);
+        // Backspace, a click or leaving the field: the word may be about to go.
+        d.reset();
+    }
+    assert!(dictionary.lock().unwrap().is_empty());
+    for _ in 0..3 {
+        d.committed("khum ", "khum ", true, &no_words_near);
+        d.committed("oki ", "oki ", true, &no_words_near);
+        d.reset();
+    }
+    assert!(knows(&dictionary, "khum"), "another word followed it");
+    assert!(!knows(&dictionary, "oki"));
+    for _ in 0..3 {
+        d.committed("oki ", "oki ", true, &no_words_near);
+        d.ended_at_key(true);
+    }
+    assert!(knows(&dictionary, "oki"), "Enter followed it");
+    for _ in 0..3 {
+        d.committed("uki ", "uki ", true, &no_words_near);
+        d.ended_at_key(false);
+    }
+    assert!(!knows(&dictionary, "uki"), "Delete followed it");
+}
+
+#[test]
+fn only_a_typed_word_of_two_to_ten_letters_can_be_meant() {
+    for (word, meant) in [
+        ("q", false),
+        ("zz", true),
+        ("abcdefghij", true),
+        ("abcdefghijk", false),
+    ] {
+        let (dictionary, learning) = (shared_dictionary(), learning_on());
+        type_alone(&mut counting(&dictionary, &learning), word, 3);
+        assert_eq!(!dictionary.lock().unwrap().is_empty(), meant, "{word}");
+    }
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut d = counting(&dictionary, &learning);
+    // The table has ta: a word it knows may be one typed without its marks.
+    type_alone(&mut d, "ta", 3);
+    d.committed("khum.", "", false, &no_words_near);
+    d.committed_as_written("khum.");
+    type_alone(&mut d, "khum", 1);
+    assert!(
+        dictionary.lock().unwrap().is_empty(),
+        "a macro's text and an abbreviation's are not typed"
+    );
+}
+
+#[test]
+fn plain_words_count_only_where_asked_and_only_while_typos_are_fixed() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut command_line = Diacritics::new(Arc::clone(&dictionary), Arc::clone(&learning));
+    type_alone(&mut command_line, "khum", 3);
+    let mut unfixed = counting(&dictionary, &learning);
+    unfixed.set_fixing(None);
+    type_alone(&mut unfixed, "khum", 3);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn the_counts_of_plain_words_end_with_a_forget_and_with_learning_off() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut d = counting(&dictionary, &learning);
+    type_alone(&mut d, "khum", 2);
+    learning.forgot();
+    type_alone(&mut d, "khum", 2);
+    assert!(dictionary.lock().unwrap().is_empty(), "counted afresh");
+    learning.set(false);
+    type_alone(&mut d, "khum", 3);
+    learning.set(true);
+    type_alone(&mut d, "khum", 2);
+    assert!(
+        dictionary.lock().unwrap().is_empty(),
+        "nothing counted while off, nor kept from before"
+    );
+    type_alone(&mut d, "khum", 1);
+    assert!(knows(&dictionary, "khum"));
+}
+
+#[test]
+fn the_engine_counts_plain_words_where_the_front_end_asks() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("khum", '.'); 3]);
+    assert!(dictionary.lock().unwrap().is_empty(), "not asked for");
+    e.set_counting_plain_words(true);
+    // With macros on the engine handles Backspace itself, otherwise it forwards the key.
+    for macros in [false, true] {
+        e.macro_enabled = macros;
+        for _ in 0..3 {
+            type_into(&mut e, &mut field, &[("khum", ' ')]);
+            e.process_key_event(KEY_BACKSPACE, 0);
+        }
+        assert!(dictionary.lock().unwrap().is_empty(), "{macros}");
+    }
+    type_into(&mut e, &mut field, &[("khum", '.'); 3]);
+    assert_eq!(field, ["khum"; 12]);
+    assert!(knows(&dictionary, "khum"));
+}
+
+#[test]
+fn a_word_reopened_and_ended_again_is_left_alone_once() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.set_counting_plain_words(true);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("khum", '.')]);
+    for _ in 0..2 {
+        // Backspace right after the full stop: the front end deletes it and reopens the word,
+        // without the key reaching the engine.
+        e.reopen_committed("khum");
+        e.process_key_event('.' as u32, 0);
+        commit_into(&mut e, &mut field);
+    }
+    type_into(&mut e, &mut field, &[("khum", '.')]);
+    assert!(
+        dictionary.lock().unwrap().is_empty(),
+        "typed twice, however often it was ended"
+    );
+    type_into(&mut e, &mut field, &[("khum", '.')]);
+    assert!(knows(&dictionary, "khum"));
+}
+
+#[test]
+fn a_macro_word_taken_back_from_its_fix_does_not_count() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut d = counting(&dictionary, &learning);
+    for _ in 0..2 {
+        let mut field = Vec::new();
+        d.committed("toi ", "toi ", true, &no_words_near);
+        field.push("toi".to_string());
+        d.committed("ngo ", "", false, &no_words_near);
+        field.push("ngo".to_string());
+        apply_changes(d.pull_changes(), &mut field);
+        assert_eq!(field, ["tôi", "gõ"], "the macro's word is fixed");
+        assert!(d.undo_fix().is_some());
+        d.committed("ngo.", "ngo.", true, &no_words_near);
+    }
+    type_alone(&mut d, "ngo", 1);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn only_the_word_that_just_ended_is_taken_back() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut d = counting(&dictionary, &learning);
+    type_alone(&mut d, "khum", 1);
+    d.committed("ta ", "ta ", true, &no_words_near);
+    // The cursor went back to the earlier word, which had been left alone.
+    d.taken_back("khum");
+    type_alone(&mut d, "khum", 2);
+    assert!(knows(&dictionary, "khum"));
+}
+
+#[test]
+fn a_word_erased_right_after_it_ended_was_not_left_alone() {
+    // With macros on the engine handles Backspace itself, otherwise it forwards the key.
+    for macros in [false, true] {
+        let dictionary = shared_dictionary();
+        let mut e = engine_on(&dictionary);
+        e.set_counting_plain_words(true);
+        e.macro_enabled = macros;
+        let mut field = Vec::new();
+        for _ in 0..2 {
+            type_into(&mut e, &mut field, &[("khum", '.')]);
+            e.process_key_event(KEY_BACKSPACE, 0);
+        }
+        type_into(&mut e, &mut field, &[("khum", '.')]);
+        assert!(dictionary.lock().unwrap().is_empty(), "{macros}");
+        type_into(&mut e, &mut field, &[("khum", '.'); 2]);
+        assert!(knows(&dictionary, "khum"), "{macros}");
+    }
+}
+
+#[test]
+fn an_abbreviation_kept_as_typed_is_not_guessed() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.shorthand = shorthand(&[("toi", "tao")]);
+    e.shorthand.set_learning(true);
+    for _ in 0..2 {
+        type_keys(&mut e, "toi ");
+        take_back(&mut e, "toi");
+        e.process_key_event(KEY_SPACE, 0);
+        e.pull_commit();
+    }
+    let mut field = vec!["toi".to_string(); 2];
+    type_into(&mut e, &mut field, &[("toi", ' '), ("phim", '.')]);
+    assert_eq!(field[..3], ["toi", "toi", "toi"]);
+    e.reset();
+    assert!(dictionary.lock().unwrap().is_empty());
+}

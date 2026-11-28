@@ -687,6 +687,27 @@ pub extern "C" fn EngineSetFixing(engine: usize, margin: u8) {
     handles::with_engine(engine, |e| e.set_fixing(margin));
 }
 
+/// Whether a word without marks that nothing knows, typed and left alone three times, is learned
+/// as meant in this field. Off until asked for.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetCountingPlainWords(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_counting_plain_words(on != 0));
+}
+
+/// Enter or Tab that the front end handles without the engine typed on from the last word, so
+/// the reset that follows does not take that word for one about to be removed.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineTypedOn(engine: usize) {
+    handles::with_engine(engine, |e| e.typed_on());
+}
+
+/// Backspace with a modifier, which the front end handles without the engine, may erase the word
+/// that was just counted as left alone.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineErasedBack(engine: usize) {
+    handles::with_engine(engine, |e| e.erased_back());
+}
+
 /// For Backspace right after the key that committed a fixed word: the text the field shows from
 /// that word to the cursor, for the front end to check and delete, the word now reopened as
 /// typed; null when there is no fix to take back.

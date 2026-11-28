@@ -129,8 +129,8 @@ Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md), những gì sắp l�
 Khi Đoán dấu bật, nó học từ chữ bạn gõ. Việc học bật sẵn; lần đầu học, Ngó Sen báo một lần bằng thông
 báo của desktop.
 
-- **Học gì:** chữ có dấu mà Ngó Sen đã đưa vào ô, gồm chữ bạn tự gõ có dấu và chữ bạn bấm Backspace để giữ
-  nguyên như đã gõ sau khi đoán sai. Không học chữ máy tự đoán, không học chữ bung ra từ gõ tắt.
+- **Học gì:** chữ có dấu mà Ngó Sen đã đưa vào ô, gồm chữ bạn tự gõ có dấu và chữ bạn bấm Backspace trả lại
+  như đã gõ đủ ba lần sau khi đoán sai (số lần chỉ đếm trong bộ nhớ). Không học chữ máy tự đoán, không học chữ bung ra từ gõ tắt.
 - **Chữ không dấu gõ cố ý:** chữ không dấu mà Ngó Sen chưa biết, như tên riêng hay `khum`, được học sau
   ba lần bạn gõ nó rồi gõ tiếp, để phần sửa âm tiết gõ sai không đổi nó nữa. Chỉ chữ dài 2 đến 10 chữ
   cái, chỉ khi đang bật **Sửa cả âm tiết gõ sai**, và không học trong terminal. Số đếm chỉ nằm trong bộ

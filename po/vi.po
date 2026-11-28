@@ -1742,8 +1742,8 @@ msgid "Type toi di hoc and get tôi đi học; a word can change again as the ne
 msgstr "Gõ toi di hoc ra tôi đi học; một chữ có thể đổi tiếp khi gõ các chữ sau. Bấm Backspace ngay sau chữ thì trả lại chữ như đã gõ. Không chạy trong ô mật khẩu."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "tôi gỗ phím becomes tôi gõ phím once phím is typed: a mark key typed wrong is fixed when the words around it clearly want another word. It puts right about one such slip in four and now and then changes a word typed on purpose; Backspace right after puts it back for good."
-msgstr "tôi gỗ phím thành tôi gõ phím khi gõ xong phím: phím dấu gõ nhầm được sửa khi các chữ xung quanh cho thấy rõ là chữ khác. Sửa được khoảng 1 trong 4 lỗi kiểu này, và thỉnh thoảng đổi nhầm một chữ cố ý gõ; bấm Backspace ngay sau đó thì trả lại và giữ luôn chữ đó."
+msgid "tôi gỗ phím becomes tôi gõ phím once phím is typed: a mark key typed wrong is fixed when the words around it clearly want another word. It puts right about one such slip in four and now and then changes a word typed on purpose; Backspace right after puts it back, and the third time keeps the word."
+msgstr "tôi gỗ phím thành tôi gõ phím khi gõ xong phím: phím dấu gõ nhầm được sửa khi các chữ xung quanh cho thấy rõ là chữ khác. Sửa được khoảng 1 trong 4 lỗi kiểu này, và thỉnh thoảng đổi nhầm một chữ cố ý gõ; bấm Backspace ngay sau đó thì trả lại, và trả lại đến lần thứ ba thì giữ luôn chữ đó."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "phmi becomes phím. Off, a syllable no word matches stays as typed."
@@ -2913,8 +2913,8 @@ msgid "Ngó Sen did not answer, so this may not show all it learned. Try again."
 msgstr "Ngó Sen không trả lời, nên có thể chưa hiện đủ chữ đã học. Thử lại nhé."
 
 #: settings-gui/core/learned.py
-msgid "It learns words with marks that Ngó Sen put into a field: words you typed with marks, and words you kept as typed with Backspace after a wrong guess. Not words it guessed itself, and not text from macros."
-msgstr "Học những chữ có dấu mà Ngó Sen đã đưa vào ô: chữ bạn tự gõ có dấu, và chữ bạn bấm Backspace để giữ nguyên như đã gõ sau khi đoán sai. Không học chữ máy tự đoán, không học chữ bung ra từ gõ tắt."
+msgid "It learns words with marks that Ngó Sen put into a field: words you typed with marks, and words you put back as typed with Backspace three times after a wrong guess. Not words it guessed itself, and not text from macros."
+msgstr "Học những chữ có dấu mà Ngó Sen đã đưa vào ô: chữ bạn tự gõ có dấu, và chữ bạn bấm Backspace trả lại như đã gõ đủ ba lần sau khi đoán sai. Không học chữ máy tự đoán, không học chữ bung ra từ gõ tắt."
 
 #: settings-gui/core/learned.py
 msgid "It keeps runs of one, two and three words with how often each came, and where a run of typing started and ended. Put together, they can show short sentences you typed."

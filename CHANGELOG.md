@@ -26,12 +26,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Đoán chữ sửa được nhiều từ gõ trượt hơn: từ chưa đủ chắc lúc gõ xong thì được xét lại khi bạn gõ xong từ
   kế tiếp, có thêm từ đó làm căn cứ. Gõ `tooi nois tieegns vieetj` thì `tieegns` thành `tiếng` ngay khi
   `việt` gõ xong. Vì lúc đó chữ được sửa là từ đứng trước, việc này chỉ chạy ở ô nhập cho bộ gõ xem chữ đang
-  có. Backspace ngay sau từ kế tiếp trả lại đúng chữ đã gõ và từ đó về sau giữ nguyên chữ ấy. (#1037, #1038)
+  có. Backspace ngay sau từ kế tiếp trả lại đúng chữ đã gõ; trả lại đủ ba lần thì từ đó về sau giữ nguyên
+  chữ ấy. (#1037, #1038, #1054)
 - Đoán chữ có công tắc thử nghiệm **Sửa cả dấu gõ nhầm**, tắt sẵn, nằm dưới **Sửa cả âm tiết gõ sai**: chữ
   gõ thiếu hay thừa một phím dấu mà vẫn ra một chữ có nghĩa, như `goox` ra `gỗ` trong `tôi gỗ phím`, được
   sửa thành `gõ` khi gõ xong từ kế tiếp và các chữ xung quanh cho thấy rõ. Sửa được khoảng 1 trong 4 lỗi
-  kiểu này; thỉnh thoảng đổi nhầm một chữ cố ý gõ, khi đó Backspace ngay sau đó trả lại và từ đó về sau giữ
-  nguyên chữ ấy. (#1053)
+  kiểu này; thỉnh thoảng đổi nhầm một chữ cố ý gõ, khi đó Backspace ngay sau đó trả lại, và trả lại đủ
+  ba lần thì từ đó về sau giữ nguyên chữ ấy. (#1053)
 - Đoán chữ nay học cả chữ không dấu bạn gõ cố ý: chữ mà Ngó Sen chưa biết, như tên riêng hay `khum`,
   sau ba lần gõ rồi gõ tiếp thì được nhớ, và phần sửa âm tiết gõ sai không đổi nó nữa. Chỉ chữ dài 2 đến
   10 chữ cái; không học trong terminal và ô mật khẩu; nút **Xem** hiện chữ đã nhớ, **Quên hết** xoá được.

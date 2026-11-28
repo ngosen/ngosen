@@ -34,8 +34,8 @@ def how_it_learns(file=None):
     return [
         _(
             "It learns words with marks that Ngó Sen put into a field: words you typed with"
-            " marks, and words you kept as typed with Backspace after a wrong guess. Not words"
-            " it guessed itself, and not text from macros."
+            " marks, and words you put back as typed with Backspace three times after a"
+            " wrong guess. Not words it guessed itself, and not text from macros."
         ),
         _(
             "A word without marks that Ngó Sen does not know, such as a name or khum, is learned"

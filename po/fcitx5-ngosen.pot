@@ -199,6 +199,10 @@ msgid "How boldly to fix"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "Expand chat abbreviations"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Guess in terminals too"
 msgstr ""
 
@@ -2483,4 +2487,76 @@ msgstr ""
 
 #: settings-gui/core/catalog.py
 msgid "Stronger fixes more typos, and now and then changes a word that was right. A new level applies from the next thing you type."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "ko gives không, dc gives được. Backspace right after the space gives back what you typed."
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Chat abbreviations"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "View the list"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Hide the list"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Kept as typed"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expand again"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expand {} again"
+msgstr ""
+
+#: settings-gui/ui_gtk/macros.py
+msgid "The list"
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Kept as typed: {}."
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "None is kept as typed."
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "{} expands again."
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Could not expand it again: {}"
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Could not read the abbreviations: {}"
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Ngó Sen is not running. Type something with it, then try again."
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Ngó Sen did not answer. Try again."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "A word without marks that Ngó Sen does not know, such as a name or khum, is learned once you typed it and went on typing three times, so fixing typos leaves it alone. Only words of 2 to 10 letters, only while typos are fixed, and not in a terminal. The count stays in memory and starts again when fcitx5 restarts."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "A chat abbreviation you take back with Backspace twice in a row stays as typed. Which ones is kept in {}, counted while learning is on, with Đoán dấu on or off; the Macros page lists them and can make one expand again."
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Ngó Sen expanded a chat abbreviation. Press Backspace right after the space to get back what you typed. See the list or turn this off on the Macros page."
 msgstr ""

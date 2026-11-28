@@ -44,6 +44,10 @@ namespace ngosen {
         virtual uintptr_t keepWords() const {
             return 0;
         }
+        // Chat abbreviations expanded for everyone; 0 for none.
+        virtual uintptr_t chatShorthand() const {
+            return 0;
+        }
         // Đoán dấu's table and personal dictionary, shared by every field; 0 while it is off.
         virtual uintptr_t diacritics() const {
             return 0;

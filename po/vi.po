@@ -256,6 +256,10 @@ msgid "How boldly to fix"
 msgstr "Sửa mạnh tay đến đâu"
 
 #: src/ngosen-config.h
+msgid "Expand chat abbreviations"
+msgstr "Bung chữ viết tắt khi chat"
+
+#: src/ngosen-config.h
 msgid "Guess in terminals too"
 msgstr "Đoán cả trong terminal"
 
@@ -2943,3 +2947,75 @@ msgstr "Terminal không cho Ngó Sen đọc lại chữ đã gõ, nên ở đó 
 #: settings-gui/core/catalog.py
 msgid "Stronger fixes more typos, and now and then changes a word that was right. A new level applies from the next thing you type."
 msgstr "Mức mạnh hơn sửa được nhiều lỗi gõ hơn, nhưng thỉnh thoảng đổi cả chữ vốn đã đúng. Mức mới có hiệu lực từ chữ gõ tiếp theo."
+
+#: settings-gui/core/catalog.py
+msgid "ko gives không, dc gives được. Backspace right after the space gives back what you typed."
+msgstr "ko thành không, dc thành được. Bấm Backspace ngay sau dấu cách để lấy lại chữ đã gõ."
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Chat abbreviations"
+msgstr "Chữ viết tắt khi chat"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "View the list"
+msgstr "Xem danh sách"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Hide the list"
+msgstr "Ẩn danh sách"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Kept as typed"
+msgstr "Giữ nguyên như gõ"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expand again"
+msgstr "Bung lại"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expand {} again"
+msgstr "Bung lại {}"
+
+#: settings-gui/ui_gtk/macros.py
+msgid "The list"
+msgstr "Danh sách"
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Kept as typed: {}."
+msgstr "Giữ nguyên như gõ: {}."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "None is kept as typed."
+msgstr "Chưa có chữ nào được giữ nguyên như gõ."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "{} expands again."
+msgstr "{} đã bung lại như trước."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Could not expand it again: {}"
+msgstr "Không bung lại được: {}"
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Could not read the abbreviations: {}"
+msgstr "Không đọc được danh sách chữ viết tắt: {}"
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Ngó Sen is not running. Type something with it, then try again."
+msgstr "Ngó Sen chưa chạy. Gõ thử vài chữ bằng Ngó Sen rồi thử lại."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Ngó Sen did not answer. Try again."
+msgstr "Ngó Sen không trả lời. Thử lại nhé."
+
+#: settings-gui/core/learned.py
+msgid "A word without marks that Ngó Sen does not know, such as a name or khum, is learned once you typed it and went on typing three times, so fixing typos leaves it alone. Only words of 2 to 10 letters, only while typos are fixed, and not in a terminal. The count stays in memory and starts again when fcitx5 restarts."
+msgstr "Chữ không dấu mà Ngó Sen chưa biết, như tên riêng hay khum, được học sau ba lần bạn gõ nó rồi gõ tiếp, để phần sửa âm tiết gõ sai không đổi nó nữa. Chỉ chữ dài 2 đến 10 chữ cái, chỉ khi đang bật sửa âm tiết gõ sai, và không học trong terminal. Số đếm chỉ nằm trong bộ nhớ, khởi động lại fcitx5 thì đếm lại từ đầu."
+
+#: settings-gui/core/learned.py
+msgid "A chat abbreviation you take back with Backspace twice in a row stays as typed. Which ones is kept in {}, counted while learning is on, with Đoán dấu on or off; the Macros page lists them and can make one expand again."
+msgstr "Chữ viết tắt khi chat mà bạn trả lại bằng Backspace hai lần liền thì từ đó giữ nguyên như gõ. Những chữ ấy được ghi ở {}, chỉ đếm khi việc học đang bật, dù Đoán dấu bật hay tắt; trang Gõ tắt liệt kê chúng và cho bung lại từng chữ."
+
+#: src/ngosen-engine.cpp
+msgid "Ngó Sen expanded a chat abbreviation. Press Backspace right after the space to get back what you typed. See the list or turn this off on the Macros page."
+msgstr "Ngó Sen vừa bung một chữ viết tắt khi chat. Bấm Backspace ngay sau dấu cách để lấy lại chữ đã gõ. Xem danh sách hoặc tắt ở trang Gõ tắt."

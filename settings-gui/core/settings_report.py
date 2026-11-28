@@ -17,6 +17,7 @@ EDITOR_KEYS = {
         "EnableMacro",
         "CapitalizeMacro",
         "EnableMacroInOffMode",
+        "ChatShorthand",
         "TimeFormat",
         "DateFormat",
     ],

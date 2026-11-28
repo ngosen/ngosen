@@ -297,34 +297,45 @@ namespace {
     struct GuessRun {
         size_t                                           pageAt = 0; // after this many keys the page alone sets the field to pageShows
         std::string                                      pageShows;
-        std::string                                      suggests; // or adds this after the cursor, selected, as autofill does
+        std::string                                      suggests; // or adds this after the cursor, as autofill does
+        bool                                             suggestsSelected = true;
         ngosen::test::AppQuirks                          quirks;
-        bool                                             doubleSpace = false;
-        bool                                             fixesTypos  = false;
-        int                                              fixStrength = 0;
-        bool                                             guess       = true;
-        bool                                             inTerminals = false;
+        bool                                             doubleSpace    = false;
+        bool                                             fixesTypos     = false;
+        int                                              fixStrength    = 0;
+        bool                                             guess          = true;
+        bool                                             inTerminals    = false;
+        bool                                             shorthand      = false;
+        bool                                             holdsTerminal  = false; // the app was found to hold an xterm.js terminal
+        bool                                             macrosWhileOff = false;
         std::vector<std::pair<std::string, std::string>> macros;
+        std::string                                      keptIn; // the file that counts the chat abbreviations taken back
         int                                              keyMs   = 50;
         bool*                                            learned = nullptr; // set to whether Đoán dấu learned anything
     };
 
     std::string learnedFile();
 
-    // Types into a FakeApp; \b in `typed` is a Backspace, \x7f a Delete, \x17 a Ctrl+Backspace, and ~
-    // after a key sends the next one right after it.
+    // Types into a FakeApp; \b in `typed` is a Backspace, \n an Enter, \t a Tab, \x7f a Delete, \x17 a
+    // Ctrl+Backspace, and ~ after a key sends the next one right after it.
     std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, const GuessRun& run = {}) {
         realMode = mode;
         realtextLen.store(0);
         FakeLoop      loop;
         FakeResources resources;
-        resources.mutableOptions().guessDiacritics     = run.guess;
-        resources.mutableOptions().doubleSpaceToPeriod = run.doubleSpace;
-        resources.mutableOptions().guessFixesTypos     = run.fixesTypos;
-        resources.mutableOptions().guessFixStrength    = run.fixStrength;
-        resources.mutableOptions().guessInTerminals    = run.inTerminals;
+        resources.mutableOptions().guessDiacritics      = run.guess;
+        resources.mutableOptions().doubleSpaceToPeriod  = run.doubleSpace;
+        resources.mutableOptions().guessFixesTypos      = run.fixesTypos;
+        resources.mutableOptions().guessFixStrength     = run.fixStrength;
+        resources.mutableOptions().guessInTerminals     = run.inTerminals;
+        resources.mutableOptions().chatShorthand        = run.shorthand;
+        resources.mutableOptions().enableMacroInOffMode = run.macrosWhileOff;
         if (!run.macros.empty())
             resources.setMacros(run.macros);
+        if (!run.keptIn.empty())
+            resources.keepShorthandIn(run.keptIn);
+        if (run.holdsTerminal)
+            resources.noteWebTerminal(field.program);
         const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
         if (run.learned != nullptr)
             resources.learnDiacriticsInto(learned);
@@ -340,13 +351,17 @@ namespace {
                 loop.pump(50);
             }
             if (i == run.pageAt && !run.suggests.empty()) {
-                app->suggest(run.suggests, true);
+                app->suggest(run.suggests, run.suggestsSelected);
                 loop.pump(50);
             }
             if (typed[i] == '\x17')
                 app->type(ngosen::key::BackSpace | ngosen::test::WithCtrl);
             else if (typed[i] == '\x7f')
                 app->type(ngosen::key::Delete);
+            else if (typed[i] == '\n')
+                app->type(ngosen::key::Return);
+            else if (typed[i] == '\t')
+                app->type(ngosen::key::Tab);
             else
                 app->type(typed[i] == '\b' ? ngosen::key::BackSpace : static_cast<uint32_t>(typed[i]));
             loop.pump(i + 1 < typed.size() && typed[i + 1] == '~' ? 2 : run.keyMs);
@@ -486,6 +501,26 @@ namespace {
             check(learned, "Đoán dấu: learns a word typed, taken back by Backspace and typed on" + name, "nothing");
             typeGuessingInApp(reports, mode, "nsen \b.", {.macros = {{"nsen", "ngó"}}, .learned = &learned});
             check(!learned, "Đoán dấu: never learns a macro's word taken back by Backspace" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum. khum. khum.", {.fixesTypos = true, .learned = &learned});
+            check(learned, "Đoán dấu: learns a plain word typed and left alone three times" + name, "nothing");
+            typeGuessingInApp(reports, mode, "khum. khum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word typed twice is not learned" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum.\b.\b. khum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word ended again after Backspace is left alone once" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum\nkhum\nkhum\n", {.quirks = {.showsEnter = true}, .fixesTypos = true, .learned = &learned});
+            check(learned, "Đoán dấu: Enter leaves a plain word alone" + name, "nothing");
+            typeGuessingInApp(reports, mode, "khum \nkhum \nkhum \n", {.quirks = {.showsEnter = true}, .fixesTypos = true, .learned = &learned});
+            check(learned, "Đoán dấu: Enter after a space leaves a plain word alone" + name, "nothing");
+            typeGuessingInApp(reports, mode, "khum \tkhum \tkhum \t", {.fixesTypos = true, .learned = &learned});
+            check(learned, "Đoán dấu: Tab after a space leaves a plain word alone" + name, "nothing");
+            typeGuessingInApp(makeField("wayland", false), mode, "khum.\b\b\b\b\bkhum.\b\b\b\b\bkhum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word erased where the field shows nothing was not left alone" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum.\x17khum.\x17khum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word erased with Ctrl+Backspace was not left alone" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum.\b\b\b\b\bkhum.\b\b\b\b\bkhum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word erased letter by letter was not left alone" + name, "learned");
+            typeGuessingInApp(makeField("wayland", true, "org.kde.konsole"), mode, "khum. khum. khum.", {.fixesTypos = true, .inTerminals = true, .learned = &learned});
+            check(!learned, "Đoán dấu: never learns a plain word on a command line" + name, "learned");
             if (mode == ngosen::Mode::Sen) {
                 // The undo finds a whole macro where it looks for one word, and leaves Backspace as it was.
                 text = typeGuessingInApp(reports, mode, "tgp \bf", {.fixesTypos = true, .macros = {{"tgp", "toi go phmi"}}});
@@ -1275,6 +1310,106 @@ namespace {
             const std::string&          value = spellings[first].second;
             check(text == value + " ", "first macro spelling wins: " + spellings[first].first, text);
         }
+    }
+
+    // Chat abbreviations expand in text written for people, and nowhere a command, an address or a
+    // password is typed.
+    void testChatShorthand() {
+        const Field reports  = makeField("wayland", true);
+        Field       terminal = reports;
+        terminal.terminal    = true;
+        Field password       = reports;
+        password.password    = true;
+        Field address        = reports;
+        address.url          = true;
+        const std::vector<std::pair<std::string, Field>> keptAsTyped{
+            {"a terminal", terminal},
+            {"a terminal that sets no terminal flag", makeField("wayland", true, "org.kde.konsole")},
+            {"a password field", password},
+            {"an address bar", address},
+        };
+        for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Preedit}) {
+            const std::string name = mode == ngosen::Mode::Preedit ? " (preedit)" : "";
+            std::string       text = typeGuessingInApp(reports, mode, "ko dc. Hnay ", {.shorthand = true});
+            check(text == "không được. Hôm nay ", "chat shorthand: expands at a word end" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko dc ");
+            check(text == "ko dc ", "chat shorthand: off unless asked for" + name, text);
+            text = typeGuessingInApp(makeField("wayland", true, "firefox"), mode, "ko ", {.shorthand = true});
+            check(text == "không ", "chat shorthand: on in a browser, though a page may show a terminal" + name, text);
+            text = typeGuessingInApp(makeField("wayland", true, "code"), mode, "ko ", {.shorthand = true});
+            check(text == "không ", "chat shorthand: on in an editor that holds a terminal" + name, text);
+            // A field that reports late has shown nothing yet, which is not what a terminal's field shows.
+            for (const auto& [delayMs, gapMs] : {std::pair{300, 50}, std::pair{700, 150}}) {
+                text = typeGuessingInApp(makeField("wayland", true, "code"), mode, "as ko dc ", {.quirks = {.reportDelayMs = delayMs}, .shorthand = true, .keyMs = gapMs});
+                check(text == "á không được ", "chat shorthand: on in an editor field that reports " + std::to_string(delayMs) + " ms late" + name, text);
+            }
+            text = typeGuessingInApp(makeField("wayland", true, "hyper"), mode, "ko ", {.shorthand = true, .holdsTerminal = true});
+            check(text == "ko ", "chat shorthand: off in an app found to be a terminal" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko ", {.shorthand = true, .macros = {{"ko", "kansas"}}});
+            check(text == "kansas ", "chat shorthand: the user's own macro wins" + name, text);
+            for (const auto& [where, field] : keptAsTyped) {
+                text = typeGuessingInApp(field, mode, "ko ", {.shorthand = true});
+                check(text == "ko ", "chat shorthand: off in " + where + name, text);
+            }
+            bool learned = true;
+            typeGuessingInApp(reports, mode, "hnay.", {.shorthand = true, .learned = &learned});
+            check(!learned, "chat shorthand: Đoán dấu never learns an expansion" + name, "learned");
+            // The preedit holds the key given back until the next key commits it.
+            text = typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true});
+            check(text == "ko.", "chat shorthand: Backspace right after gives the key back" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \b ko ", {.shorthand = true});
+            check(text == "ko không ", "chat shorthand: the key given back stays, the next one expands" + name, text);
+            text = typeGuessingInApp(reports, mode, "Hnay,\b.", {.shorthand = true});
+            check(text == "Hôm nay.", "chat shorthand: Backspace after a comma takes the comma" + name, text);
+            // A preedit field that shows no text cannot have a word deleted from it.
+            text = typeGuessingInApp(makeField("wayland", false), mode, "ko ", {.shorthand = true});
+            check(text == (mode == ngosen::Mode::Sen ? "không " : "ko "), "chat shorthand: off where Backspace could not give the key back" + name, text);
+            text = typeGuessingInApp(makeField("wayland", false), mode, "ko \b.", {.shorthand = true});
+            check(text == "ko.", "chat shorthand: Backspace where the field shows nothing" + name, text);
+            // Firefox sets no address bar flag; what follows the cursor there reads as an address.
+            text = typeGuessingInApp(makeField("wayland", true, "firefox"), mode, "ko ", {.pageAt = 2, .suggests = ".com", .suggestsSelected = false, .shorthand = true});
+            check(text == "ko .com", "chat shorthand: off in an address bar that sets no flag" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \x17", {.shorthand = true});
+            check(text == "không", "chat shorthand: Ctrl+Backspace keeps the expansion" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \x7f\b", {.shorthand = true});
+            check(text == "không", "chat shorthand: Backspace after another key takes only the space" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \b", {.pageAt = 3, .pageShows = "XYZ ", .shorthand = true});
+            check(text == "XYZ", "chat shorthand: Backspace leaves text the page changed" + name, text);
+            // Long after the expansion, a field that shows the key again is not a slow app.
+            text = typeGuessingInApp(reports, mode, "abc ko \b", {.pageAt = 7, .pageShows = "abc ko", .shorthand = true, .keyMs = 300});
+            check(text == "abc k", "chat shorthand: Backspace leaves a key the page put back" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \b \b.", {.shorthand = true});
+            check(text == "ko.", "chat shorthand: the key given back stays when its word is reopened" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .macros = {{"ko", "kansas"}}});
+            check(text == "kansas.", "chat shorthand: the user's own macro is not given back" + name, text);
+            typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .learned = &learned});
+            check(!learned, "chat shorthand: Đoán dấu never learns a key given back" + name, "learned");
+        }
+        for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Preedit}) {
+            const std::string name = mode == ngosen::Mode::Preedit ? " (preedit)" : "";
+            const std::string kept = learnedFile();
+            std::string       text = typeGuessingInApp(reports, mode, "ko \b ko \b ko dc ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko ko ko được ", "chat shorthand: taken back twice in a row, a key stays as typed" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko ", "chat shorthand: a key kept as typed stays so after a restart" + name, text);
+            std::filesystem::remove(kept);
+            text = typeGuessingInApp(reports, mode, "ko \b ko a ko \b ko ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko không a ko không ", "chat shorthand: an expansion left in place starts the count again" + name, text);
+            std::filesystem::remove(kept);
+            text = typeGuessingInApp(reports, mode, "ko \b ko. ko \b ko ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko không. ko không ", "chat shorthand: one left in place after a full stop starts the count again" + name, text);
+            std::filesystem::remove(kept);
+            text = typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .keptIn = kept});
+            text = typeGuessingInApp(reports, mode, "ko \b ko ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko ko ", "chat shorthand: the count carries over a restart" + name, text);
+            std::filesystem::remove(kept);
+        }
+        // The first word shows how the field behaves, and may itself still expand.
+        const std::string inTerminal =
+            typeGuessingInApp(makeField("wayland", true, "code"), ngosen::Mode::Sen, "laf ko dc ", {.quirks = {.keepsOnlyCommits = true}, .shorthand = true});
+        check(inTerminal == "là ko dc ", "chat shorthand: off in an editor's terminal, which shows no typed letter", inTerminal);
+        const std::string text = typeGuessingInApp(reports, ngosen::Mode::Off, "e ko ", {.shorthand = true, .macrosWhileOff = true, .macros = {{"e", "em"}}});
+        check(text == "em ko ", "chat shorthand: off while Vietnamese is off, where the user's macros still expand", text);
     }
 
     // TikTok's comment box in Chrome under GNOME applies our backspaces late and loses a commit that
@@ -6974,6 +7109,7 @@ int main() {
     testLockWordNotOnChord();
     testMacroCapitalized();
     testMacroKeyCase();
+    testChatShorthand();
     testBackspaceIntoLastWord("wayland", true);
     testBackspaceIntoLastWord("wayland", false);
     {

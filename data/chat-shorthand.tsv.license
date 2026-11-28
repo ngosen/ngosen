@@ -1,0 +1,8 @@
+data/chat-shorthand.tsv lists chat abbreviations and the words they stand for, written by hand.
+Which abbreviations to list was decided by counting them in the forum pages of FineWeb-2 vie_Latn
+(https://huggingface.co/datasets/HuggingFaceFW/fineweb-2), made available by Hugging Face under the
+Open Data Commons Attribution License (ODC-By) v1.0; no text of that data set is copied here.
+
+Copyright 2026 Ngó Sen contributors
+
+SPDX-License-Identifier: GPL-3.0-or-later

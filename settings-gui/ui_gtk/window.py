@@ -118,7 +118,7 @@ class Window(Adw.ApplicationWindow):
             self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
             table = MacroTable(self.dbus)
             table.load()
-            self.macros = MacroPage(table, self.save_with_undo)
+            self.macros = MacroPage(table, self.save_with_undo, self.show_check_message)
             self.dictionary = DictionaryPage(Dictionary(self.dbus), self.save_with_undo)
             self.emoji = emoji.EmojiPage(
                 self.model,

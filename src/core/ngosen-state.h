@@ -88,6 +88,7 @@ namespace ngosen {
         uintptr_t newBambooEngine() const;
         // Gives this field's engine Đoán dấu while it is on, typing Vietnamese, in a field that shows its text.
         void syncDiacritics();
+        void syncShorthand();
 
         /**
          * @brief Main key event handler.
@@ -202,7 +203,7 @@ namespace ngosen {
         CGoObject                bambooEngine_;
         std::string              oldPreBuffer_;
         std::string              lastWord_;                    ///< The word and break we last committed, while only backspaces follow
-        std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it or dropped keys after it
+        std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it, dropped keys after it or expanded it
         bool                     changedEarlierWords_ = false; ///< The last commit changed words before its own, while only a plain Backspace follows
         uint64_t                 lastWordAtUs_        = 0;     ///< When lastWord_ was committed
         std::string              lastWordAtFocusOut_;          ///< lastWord_ when focus left, given back if focus only bounced
@@ -235,6 +236,7 @@ namespace ngosen {
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     hiddenInput_           = false; ///< the terminal hid input at the last key
         uintptr_t                diacritics_            = 0;     ///< Đoán dấu handle the engine has, 0 for none
+        uintptr_t                shorthand_             = 0;     ///< chat abbreviations the engine has, 0 for none
         bool                     privateField_          = false; ///< the engine saw a field that hides its text
         bool                     hiddenInputSettled_    = true;  ///< what was open before the last change has been put down
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
@@ -1062,6 +1064,9 @@ namespace ngosen {
         bool         keepsOnlyCommits() const;
         bool         mayShowWebTerminal() const;
         bool         marksEachField() const;
+        bool         isCommandLine() const;
+        bool         mayBeCommandLine() const;
+        bool         inEditorTerminal() const;
         void         checkFirstLetters();
         void         resetLetterCheckOnFieldChange();
         std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held

@@ -36,6 +36,11 @@ namespace {
         return fd == -1 ? uintptr_t{0} : NewWordList(static_cast<uintptr_t>(fd));
     }
 
+    uintptr_t shorthand(const char* path) {
+        const int fd = ::open(path, O_RDONLY | O_CLOEXEC);
+        return fd == -1 ? uintptr_t{0} : NewShorthand(static_cast<uintptr_t>(fd));
+    }
+
 } // namespace
 
 namespace ngosen {
@@ -81,10 +86,12 @@ namespace ngosen::test {
         if (fd != -1)
             dictionary_ = NewDictionary(static_cast<uintptr_t>(fd));
         // Read once: tests build many of these, and the list never changes.
-        static const uintptr_t englishWords = wordList(NGOSEN_TEST_ENGLISH_WORDS);
-        static const uintptr_t keepWords    = wordList(NGOSEN_TEST_KEEP_WORDS);
-        englishWords_                       = englishWords;
-        keepWords_                          = keepWords;
+        static const uintptr_t englishWords  = wordList(NGOSEN_TEST_ENGLISH_WORDS);
+        static const uintptr_t keepWords     = wordList(NGOSEN_TEST_KEEP_WORDS);
+        static const uintptr_t chatShorthand = shorthand(NGOSEN_TEST_CHAT_SHORTHAND);
+        englishWords_                        = englishWords;
+        keepWords_                           = keepWords;
+        chatShorthand_                       = chatShorthand;
         // Each its own, so what one test teaches Đoán dấu never reaches another.
         diacritics_ = DiacriticsOpen(NGOSEN_TEST_DIACRITICS, "");
     }
@@ -106,6 +113,14 @@ namespace ngosen::test {
         DiacriticsSetLearning(diacritics_, 1);
     }
 
+    void FakeResources::keepShorthandIn(const std::string& path) {
+        DeleteObject(ownShorthand_);
+        ownShorthand_ = shorthand(NGOSEN_TEST_CHAT_SHORTHAND);
+        ShorthandKeepIn(ownShorthand_, path.c_str());
+        ShorthandSetLearning(ownShorthand_, 1);
+        chatShorthand_ = ownShorthand_;
+    }
+
     bool FakeResources::learnedDiacritics() {
         return DiacriticsSave(diacritics_, 1) != 0;
     }
@@ -114,6 +129,7 @@ namespace ngosen::test {
         DeleteObject(macroTable_);
         DeleteObject(dictionary_);
         DeleteObject(diacritics_);
+        DeleteObject(ownShorthand_);
     }
 
     bool FakeKey::isModifier() const {

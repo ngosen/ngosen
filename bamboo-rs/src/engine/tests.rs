@@ -3682,3 +3682,22 @@ fn a_word_erased_right_after_it_ended_was_not_left_alone() {
         assert!(knows(&dictionary, "khum"), "{macros}");
     }
 }
+
+#[test]
+fn an_abbreviation_kept_as_typed_is_not_guessed() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.shorthand = shorthand(&[("toi", "tao")]);
+    e.shorthand.set_learning(true);
+    for _ in 0..2 {
+        type_keys(&mut e, "toi ");
+        take_back(&mut e, "toi");
+        e.process_key_event(KEY_SPACE, 0);
+        e.pull_commit();
+    }
+    let mut field = vec!["toi".to_string(); 2];
+    type_into(&mut e, &mut field, &[("toi", ' '), ("phim", '.')]);
+    assert_eq!(field[..3], ["toi", "toi", "toi"]);
+    e.reset();
+    assert!(dictionary.lock().unwrap().is_empty());
+}

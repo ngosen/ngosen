@@ -1145,7 +1145,9 @@ impl BambooEngine {
             && let Some(mut d) = self.diacritics.take()
         {
             d.set_style(self.guess_style());
-            if written {
+            // An abbreviation kept as typed is the user's spelling, as one just taken back is.
+            let word = s.trim_end_matches(|c: char| !c.is_alphanumeric());
+            if written || self.shorthand.keeps(word) {
                 d.committed_as_written(&s);
             } else {
                 d.committed(&s, &self.raw_text(), typed, &|keys| self.words_near(keys));

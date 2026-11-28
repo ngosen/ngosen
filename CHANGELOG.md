@@ -36,8 +36,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   lại chữ đã gõ; chữ nào bạn trả lại hai lần liền thì từ đó giữ nguyên như gõ. Trang Gõ tắt có danh sách
   các chữ viết tắt, chữ đang được giữ nguyên đứng đầu kèm nút **Bung lại**, và công tắc **Bung chữ viết tắt
   khi chat** để tắt. Không bung trong terminal, ô mật khẩu, ô địa chỉ, và ở kiểu gõ gạch chân trong app
-  không báo chữ cho bộ gõ.
-  (#1039, #1040, #1042, #1043, #1045, #1046)
+  không báo chữ cho bộ gõ. Trong VS Code và các trình soạn code cùng họ, chữ viết tắt bung ở ô soạn thảo,
+  còn terminal gắn sẵn được nhận ra từ chữ thứ hai ở kiểu Gõ Sen.
+  (#1039, #1040, #1042, #1043, #1045, #1046, #1048, #1049, #1051)
 
 ### Sửa
 

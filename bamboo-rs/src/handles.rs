@@ -11,6 +11,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::engine::{BambooEngine, Dictionary, WordList};
 use crate::macro_table::MacroTable;
+use crate::shorthand::Shorthand;
 
 pub enum Object {
     Engine(Box<BambooEngine>),
@@ -18,6 +19,7 @@ pub enum Object {
     Dictionary(Arc<Dictionary>),
     WordList(Arc<WordList>),
     Diacritics(Arc<DiacriticsStore>),
+    Shorthand(Arc<Shorthand>),
 }
 
 /// Đoán dấu's personal dictionary, which every field shares, and the save writing it, if any.
@@ -86,6 +88,13 @@ pub fn diacritics(handle: usize) -> Option<Arc<DiacriticsStore>> {
     }
 }
 
+pub fn shorthand(handle: usize) -> Option<Arc<Shorthand>> {
+    match registry().objects.get(&handle) {
+        Some(Object::Shorthand(shorthand)) => Some(Arc::clone(shorthand)),
+        _ => None,
+    }
+}
+
 pub fn delete_handle(handle: usize) {
     registry().objects.remove(&handle);
 }
@@ -102,6 +111,7 @@ mod tests {
         assert!(dictionary(0).is_none());
         assert!(word_list(0).is_none());
         assert!(diacritics(0).is_none());
+        assert!(shorthand(0).is_none());
         delete_handle(0);
     }
 

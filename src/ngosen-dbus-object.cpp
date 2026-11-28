@@ -56,6 +56,15 @@ namespace fcitx {
         return {ok, error};
     }
 
+    std::string NgoSenDBusObject::chatShorthandList() {
+        return engine_->chatShorthandList();
+    }
+
+    std::tuple<bool, std::string> NgoSenDBusObject::expandShorthandAgain(const std::string& key) {
+        auto [ok, error] = engine_->expandShorthandAgain(key);
+        return {ok, error};
+    }
+
     std::string NgoSenDBusObject::convertText(const std::string& text, const std::string& from, const std::string& to, int32_t letterCase, bool stripDiacritics) {
         const ngosen::UniqueCPtr<char> converted(ConvertText(text.c_str(), from.c_str(), to.c_str(), letterCase, stripDiacritics));
         if (!converted)

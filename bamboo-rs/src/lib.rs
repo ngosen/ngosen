@@ -11,6 +11,7 @@ mod ffi;
 mod handles;
 mod learned;
 mod macro_table;
+mod shorthand;
 mod spelling;
 mod text;
 mod time_format;

@@ -23,6 +23,7 @@ use crate::engine::{
 };
 use crate::handles::{self, DiacriticsStore, Object};
 use crate::macro_table::MacroTable;
+use crate::shorthand::Shorthand;
 use crate::spelling::VietnameseSpelling;
 
 /// `FcitxBambooEngineOption` in the header.
@@ -382,14 +383,109 @@ pub extern "C" fn NewShorthand(fd: usize) -> usize {
         let (key, text) = line.split_once('\t')?;
         Some((key.to_string(), text.to_string()))
     });
-    handles::new_handle(Object::MacroTable(Arc::new(MacroTable::new(pairs))))
+    let shorthand = Shorthand::new(MacroTable::new(pairs));
+    handles::new_handle(Object::Shorthand(Arc::new(shorthand)))
 }
 
 /// Expands the abbreviations of `table`, from `NewShorthand`, in this engine; 0 turns that off.
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineSetShorthand(engine: usize, table: usize) {
-    let table = handles::macro_table(table).unwrap_or_default();
+    let table = handles::shorthand(table).unwrap_or_default();
     handles::with_engine(engine, |e| e.shorthand = table);
+}
+
+/// Keeps count in the file `path` of the abbreviations the user takes back, starting from what it
+/// holds.
+///
+/// # Safety
+/// `path` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ShorthandKeepIn(table: usize, path: *const c_char) {
+    // SAFETY: the caller passes a valid C string or null.
+    let path = unsafe { string_from_c(path) };
+    if let Some(shorthand) = handles::shorthand(table) {
+        shorthand.keep_in(std::path::Path::new(&path));
+    }
+}
+
+/// Whether an abbreviation taken back twice in a row is kept as typed from then on.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandSetLearning(table: usize, on: u8) {
+    if let Some(shorthand) = handles::shorthand(table) {
+        shorthand.set_learning(on != 0);
+    }
+}
+
+/// The abbreviations of `table`, one per line: the key, a tab, its text, a tab, and "kept" when
+/// the user keeps it as typed. Null without a table.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandList(table: usize) -> *mut c_char {
+    let Some(shorthand) = handles::shorthand(table) else {
+        return std::ptr::null_mut();
+    };
+    let lines: Vec<_> = shorthand
+        .list()
+        .iter()
+        .map(|(key, text, kept)| format!("{key}\t{text}\t{}", if *kept { "kept" } else { "" }))
+        .collect();
+    c_string(&lines.join("\n"))
+}
+
+/// Holds the next expansion from `table` for `ShorthandTakeFirstUse`.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandAwaitUse(table: usize) {
+    if let Some(shorthand) = handles::shorthand(table) {
+        shorthand.await_use();
+    }
+}
+
+/// The expansion `ShorthandAwaitUse` asked for, once: what was typed, a tab, what it became. Null
+/// until there is one.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandTakeFirstUse(table: usize) -> *mut c_char {
+    match handles::shorthand(table).and_then(|shorthand| shorthand.take_first_use()) {
+        Some((word, text)) => c_string(&format!("{word}\t{text}")),
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// Expands the abbreviation `key` again after the user kept it as typed. Returns null, or why it
+/// failed.
+///
+/// # Safety
+/// `key` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ShorthandExpandAgain(table: usize, key: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a valid C string or null.
+    let key = unsafe { string_from_c(key) };
+    match handles::shorthand(table).map(|shorthand| shorthand.expand_again(&key)) {
+        Some(Ok(())) => std::ptr::null_mut(),
+        Some(Err(e)) => c_string(&e.to_string()),
+        None => c_string("the chat abbreviations are not loaded"),
+    }
+}
+
+/// Forgets which abbreviations the user keeps as typed. Returns null, or why it failed.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandForget(table: usize) -> *mut c_char {
+    match handles::shorthand(table).map(|shorthand| shorthand.forget()) {
+        Some(Err(e)) => c_string(&e.to_string()),
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// The same while no table is open, for the file alone.
+///
+/// # Safety
+/// `path` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ShorthandRemoveFile(path: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a valid C string or null.
+    let path = unsafe { string_from_c(path) };
+    match crate::shorthand::remove_file(std::path::Path::new(&path)) {
+        Ok(()) => std::ptr::null_mut(),
+        Err(e) => c_string(&e.to_string()),
+    }
 }
 
 /// A Backspace keeps English keys as typed; 0 for `list` means no English words.
@@ -589,6 +685,27 @@ pub extern "C" fn EngineEndWord(engine: usize) {
 pub extern "C" fn EngineSetFixing(engine: usize, margin: u8) {
     let margin = (margin != 0).then(|| f64::from(margin));
     handles::with_engine(engine, |e| e.set_fixing(margin));
+}
+
+/// Whether a word without marks that nothing knows, typed and left alone three times, is learned
+/// as meant in this field. Off until asked for.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetCountingPlainWords(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_counting_plain_words(on != 0));
+}
+
+/// Enter or Tab that the front end handles without the engine typed on from the last word, so
+/// the reset that follows does not take that word for one about to be removed.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineTypedOn(engine: usize) {
+    handles::with_engine(engine, |e| e.typed_on());
+}
+
+/// Backspace with a modifier, which the front end handles without the engine, may erase the word
+/// that was just counted as left alone.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineErasedBack(engine: usize) {
+    handles::with_engine(engine, |e| e.erased_back());
 }
 
 /// For Backspace right after the key that committed a fixed word: the text the field shows from

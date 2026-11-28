@@ -35,6 +35,8 @@ class FileTest(unittest.TestCase):
         file = learned.path({"HOME": home})
         lines = learned.how_it_learns(file)
         self.assertTrue(any("~/.local/share/ngosen/learned-diacritics" in line for line in lines))
+        self.assertTrue(any("~/.local/share/ngosen/kept-chat-shorthand" in line for line in lines))
+        self.assertTrue(any("without marks" in line and "three times" in line for line in lines))
         self.assertEqual(learned.shown_path("/data/ngosen/x", "/home/a"), "/data/ngosen/x")
         self.assertEqual(learned.shown_path("/home/ab/x", "/home/a"), "/home/ab/x")
 
@@ -80,9 +82,14 @@ class LearnedTest(unittest.TestCase):
             with self.subTest(name=name):
                 write(self.file, SAVED)
                 self.answer(ForgetLearned=name)
+                kept = os.path.join(os.path.dirname(self.file), "kept-chat-shorthand")
+                write(kept, "ko\t2\n")
+                write(kept + ".tmp", "ko\t2\n")
                 forgot, line = self.learned.forget()
                 self.assertTrue(forgot, line)
                 self.assertFalse(os.path.exists(self.file))
+                self.assertFalse(os.path.exists(kept))
+                self.assertFalse(os.path.exists(kept + ".tmp"))
 
     def test_forgetting_keeps_the_file_while_ngosen_may_hold_more(self):
         lines = {

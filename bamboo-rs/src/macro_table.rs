@@ -29,6 +29,10 @@ impl MacroTable {
         self.table.is_empty()
     }
 
+    pub fn entries(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.table.iter().map(|(k, v)| (k.as_str(), v.as_str()))
+    }
+
     pub fn get(&self, key: &str) -> Option<&str> {
         if key.is_empty() || self.is_empty() {
             return None;

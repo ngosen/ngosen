@@ -203,7 +203,7 @@ namespace ngosen {
         CGoObject                bambooEngine_;
         std::string              oldPreBuffer_;
         std::string              lastWord_;                    ///< The word and break we last committed, while only backspaces follow
-        std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it or dropped keys after it
+        std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it, dropped keys after it or expanded it
         bool                     changedEarlierWords_ = false; ///< The last commit changed words before its own, while only a plain Backspace follows
         uint64_t                 lastWordAtUs_        = 0;     ///< When lastWord_ was committed
         std::string              lastWordAtFocusOut_;          ///< lastWord_ when focus left, given back if focus only bounced
@@ -1064,6 +1064,9 @@ namespace ngosen {
         bool         keepsOnlyCommits() const;
         bool         mayShowWebTerminal() const;
         bool         marksEachField() const;
+        bool         isCommandLine() const;
+        bool         mayBeCommandLine() const;
+        bool         inEditorTerminal() const;
         void         checkFirstLetters();
         void         resetLetterCheckOnFieldChange();
         std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held

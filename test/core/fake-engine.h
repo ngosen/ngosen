@@ -59,6 +59,8 @@ namespace ngosen::test {
         // Gives Đoán dấu a file to learn into, so a test can ask what it learned; call before building a
         // TypingState.
         void learnDiacriticsInto(const std::string& path);
+        // Counts the chat abbreviations taken back in a file of its own; call before building a TypingState.
+        void keepShorthandIn(const std::string& path);
         // Saves what Đoán dấu learned since the last call; false when it learned nothing.
         bool learnedDiacritics();
         // Replaces the macro table; call before building a TypingState.
@@ -85,6 +87,7 @@ namespace ngosen::test {
         uintptr_t                englishWords_  = 0;
         uintptr_t                keepWords_     = 0;
         uintptr_t                chatShorthand_ = 0;
+        uintptr_t                ownShorthand_  = 0;
         uintptr_t                diacritics_    = 0;
         Recorder                 recorder_;
     };

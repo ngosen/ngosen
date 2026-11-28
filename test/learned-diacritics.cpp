@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // The Word guessing page saves and forgets what Đoán dấu learned. Forgetting must reach memory too,
-// even with Đoán dấu off, or the save at exit writes it all back.
+// even with Đoán dấu off, or the save at exit writes it all back. The chat abbreviations the user
+// keeps as typed are learned and forgotten with it.
 #include "ngosen-engine.h"
 #include "test-input-context.h"
 
@@ -22,13 +23,13 @@ namespace {
         }
     }
 
-    fcitx::RawConfig config(bool guess) {
+    fcitx::RawConfig config(bool guess, bool learn = true) {
         fcitx::RawConfig c;
         c.setValueByPath("Mode", "Preedit");
         c.setValueByPath("VietnameseOn", "True");
         c.setValueByPath("InputMethod", "Telex");
         c.setValueByPath("GuessDiacritics", guess ? "True" : "False");
-        c.setValueByPath("LearnDiacritics", "True");
+        c.setValueByPath("LearnDiacritics", learn ? "True" : "False");
         return c;
     }
 
@@ -43,6 +44,29 @@ namespace {
             fcitx::KeyEvent up(&context, key, true);
             engine.keyEvent(entry, up);
         }
+    }
+
+    // Backspace right after `shown` was committed, in a field that reports it.
+    void backspaceAfter(fcitx::NgoSenEngine& engine, TestInputContext& context, const std::string& shown) {
+        context.surroundingText().setText(shown, fcitx::utf8::length(shown), fcitx::utf8::length(shown));
+        context.updateSurroundingText();
+        const fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
+        const fcitx::Key              key(FcitxKey_BackSpace);
+        fcitx::KeyEvent               down(&context, key, false);
+        engine.keyEvent(entry, down);
+        fcitx::KeyEvent up(&context, key, true);
+        engine.keyEvent(entry, up);
+    }
+
+    // What "ko " commits after its expansion was taken back twice in a row.
+    std::string koAfterTwoTakenBack(fcitx::NgoSenEngine& engine, TestInputContext& context) {
+        for (int i = 0; i < 2; ++i) {
+            type(engine, context, "ko ");
+            backspaceAfter(engine, context, "không ");
+            type(engine, context, " ");
+        }
+        type(engine, context, "ko ");
+        return context.commits().back();
     }
 
     int lines(const std::filesystem::path& path) {
@@ -91,6 +115,74 @@ namespace {
             check(entry.path().filename().string().find("learned-diacritics") == std::string::npos, "removed " + entry.path().filename().string());
     }
 
+    void keepsAndForgetsChatShorthand(const std::filesystem::path& kept) {
+        const fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
+        {
+            TestInstance        testInstance;
+            fcitx::NgoSenEngine engine(&testInstance.instance);
+            engine.setConfig(config(false, false));
+            TestInputContext context(&testInstance.instance, "kate");
+            context.setCapabilityFlags({fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::SurroundingText});
+            context.focusIn();
+            fcitx::InputContextEvent focus(&context, fcitx::EventType::InputContextFocusIn);
+            engine.activate(entry, focus);
+            check(koAfterTwoTakenBack(engine, context) == "không ", "with learning off a key taken back twice still expands");
+            check(!std::filesystem::exists(kept), "with learning off nothing is written");
+
+            engine.setConfig(config(false));
+            check(koAfterTwoTakenBack(engine, context) == "ko ", "a key taken back twice in a row stays as typed");
+            check(lines(kept) == 1, "the key is in its file");
+            std::filesystem::remove(kept);
+            engine.reloadConfig();
+            type(engine, context, "ko ");
+            check(context.commits().back() == "ko ", "a settings reload keeps a count that is not in the file");
+            type(engine, context, "dc ");
+            backspaceAfter(engine, context, "được ");
+            type(engine, context, " ");
+            check(lines(kept) == 2, "the next change writes every count again");
+        }
+        TestInstance        testInstance;
+        fcitx::NgoSenEngine engine(&testInstance.instance);
+        engine.setConfig(config(false));
+        TestInputContext context(&testInstance.instance, "kate");
+        context.setCapabilityFlags({fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::SurroundingText});
+        context.focusIn();
+        fcitx::InputContextEvent focus(&context, fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, focus);
+        type(engine, context, "ko ");
+        check(context.commits().back() == "ko ", "the key stays as typed after a restart");
+        check(engine.forgetLearned().first, "forgetting the kept keys works");
+        check(!std::filesystem::exists(kept), "forgetting removes their file");
+        type(engine, context, "ko ");
+        check(context.commits().back() == "không ", "a forgotten key expands again");
+
+        const std::string keptLine = "ko\tkhông\tkept";
+        check(engine.chatShorthandList().find("ko\tkhông\t") != std::string::npos, "the list holds the abbreviations");
+        check(engine.chatShorthandList().find(keptLine) == std::string::npos, "the list marks no key that expands");
+        check(koAfterTwoTakenBack(engine, context) == "ko ", "the key is kept again");
+        check(engine.chatShorthandList().find(keptLine) != std::string::npos, "the list marks a key kept as typed");
+        check(engine.expandShorthandAgain("ko").first, "expanding a kept key again works");
+        check(engine.chatShorthandList().find(keptLine) == std::string::npos, "the list no longer marks it");
+        check(!std::filesystem::exists(kept), "its count leaves the file");
+        type(engine, context, "ko ");
+        check(context.commits().back() == "không ", "the key expands again");
+
+        // A settings window that read the marks before a notice went out writes the old ones back.
+        const auto written = [&engine](const std::string& mark, const char* value) {
+            fcitx::RawConfig c = config(false);
+            c.setValueByPath(mark, value);
+            engine.setConfig(c);
+            fcitx::RawConfig now;
+            engine.getConfig()->save(now);
+            const std::string* kept = now.valueByPath(mark);
+            return kept != nullptr ? *kept : std::string();
+        };
+        for (const std::string mark : {"ChatShorthandAnnounced", "LearningAnnounced"}) {
+            check(written(mark, "True") == "True", mark + " can be set");
+            check(written(mark, "False") == "True", mark + " is not taken back by a later write");
+        }
+    }
+
 } // namespace
 
 int main() {
@@ -105,5 +197,9 @@ int main() {
     configureTestPaths(testName);
     std::filesystem::create_directories(dir);
     forgetsTheFilesWhenNeverOpened(dir / "learned-diacritics");
+
+    configureTestPaths(testName);
+    std::filesystem::create_directories(dir);
+    keepsAndForgetsChatShorthand(dir / "kept-chat-shorthand");
     return failures == 0 ? 0 : 1;
 }

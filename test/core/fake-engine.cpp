@@ -113,6 +113,14 @@ namespace ngosen::test {
         DiacriticsSetLearning(diacritics_, 1);
     }
 
+    void FakeResources::keepShorthandIn(const std::string& path) {
+        DeleteObject(ownShorthand_);
+        ownShorthand_ = shorthand(NGOSEN_TEST_CHAT_SHORTHAND);
+        ShorthandKeepIn(ownShorthand_, path.c_str());
+        ShorthandSetLearning(ownShorthand_, 1);
+        chatShorthand_ = ownShorthand_;
+    }
+
     bool FakeResources::learnedDiacritics() {
         return DiacriticsSave(diacritics_, 1) != 0;
     }
@@ -121,6 +129,7 @@ namespace ngosen::test {
         DeleteObject(macroTable_);
         DeleteObject(dictionary_);
         DeleteObject(diacritics_);
+        DeleteObject(ownShorthand_);
     }
 
     bool FakeKey::isModifier() const {

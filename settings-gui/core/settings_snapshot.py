@@ -16,7 +16,7 @@ SUB_CONFIGS = (
 )
 
 # fcitx5 sets these once it told the user something; putting back an older value would tell again.
-SHOWN_MARKS = ("LearningAnnounced",)
+SHOWN_MARKS = ("LearningAnnounced", "ChatShorthandAnnounced")
 
 
 def local_dict_path():

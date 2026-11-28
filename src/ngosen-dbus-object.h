@@ -34,6 +34,9 @@ namespace fcitx {
         std::tuple<std::string, std::string> diacriticsStatus();
         std::tuple<std::string, std::string> saveLearned();
         std::tuple<bool, std::string>        forgetLearned();
+        // For the Macros page: the chat abbreviations as NgoSenEngine::chatShorthandList gives them.
+        std::string                   chatShorthandList();
+        std::tuple<bool, std::string> expandShorthandAgain(const std::string& key);
 
       private:
         NgoSenEngine* engine_;
@@ -44,6 +47,8 @@ namespace fcitx {
         FCITX_OBJECT_VTABLE_METHOD(diacriticsStatus, "DiacriticsStatus", "", "ss");
         FCITX_OBJECT_VTABLE_METHOD(saveLearned, "SaveLearned", "", "ss");
         FCITX_OBJECT_VTABLE_METHOD(forgetLearned, "ForgetLearned", "", "bs");
+        FCITX_OBJECT_VTABLE_METHOD(chatShorthandList, "ChatShorthandList", "", "s");
+        FCITX_OBJECT_VTABLE_METHOD(expandShorthandAgain, "ExpandShorthandAgain", "s", "bs");
     };
 
 } // namespace fcitx

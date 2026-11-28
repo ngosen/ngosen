@@ -8,6 +8,10 @@ use crate::tone;
 /// How far the best fix must score above keeping the word, or the next fix, before it is made.
 pub const FIX_MARGIN: f64 = 4.0;
 
+/// How far a fix of a word the table knows must win, decided once the word after it is typed: such
+/// a word is mostly typed as meant.
+pub const MARKS_MARGIN: f64 = 12.0;
+
 /// What one unit of a nearby word's cost takes off its score.
 const NEARBY_SCALE: f64 = 2.0;
 
@@ -91,7 +95,7 @@ impl Typing<'_> {
                 })
             })
             .collect();
-        self.best_fix(i, ended, cands, false)
+        self.best_fix(i, ended, cands, false, &[UNK])
     }
 
     /// The fix for syllable `i` among `nearby`, the words the input method would have shown for
@@ -103,7 +107,27 @@ impl Typing<'_> {
         if self.opts.get(i)? != &[UNK] || self.typed[i].len() > MAX_TARGET {
             return None;
         }
-        let cands = (nearby.iter())
+        let cands = self.nearby_candidates(nearby);
+        self.best_fix(i, ended, cands, true, &[UNK])
+    }
+
+    /// The fix for syllable `i`, which the table may know, among `nearby`, words that differ from
+    /// it only in marks; `None` when none is common enough. Scored as [`Typing::fix_nearby`] does,
+    /// except that keeping the syllable is scored as the best of its readings, not as an unknown
+    /// word: English keys read as a word with marks must not lose to a word near that one.
+    pub fn fix_marks(&self, i: usize, ended: bool, nearby: &[Nearby<'_>]) -> Option<Fix> {
+        let (typed, readings) = (self.typed.get(i)?, self.opts.get(i)?);
+        if typed.len() > MAX_TARGET {
+            return None;
+        }
+        let itself = tone::to_new(&typed.to_lowercase());
+        let mut cands = self.nearby_candidates(nearby);
+        cands.retain(|c| c.word != itself);
+        self.best_fix(i, ended, cands, true, readings)
+    }
+
+    fn nearby_candidates(&self, nearby: &[Nearby<'_>]) -> Vec<Candidate> {
+        (nearby.iter())
             .filter_map(|near| {
                 let word = tone::to_new(&near.word.to_lowercase());
                 let ids = self.common(&word)?;
@@ -113,8 +137,7 @@ impl Typing<'_> {
                     penalty: NEARBY_SCALE * near.cost,
                 })
             })
-            .collect();
-        self.best_fix(i, ended, cands, true)
+            .collect()
     }
 
     /// Whether the table or the personal dictionary knows a syllable, so that it is no fix target.
@@ -142,9 +165,16 @@ impl Typing<'_> {
         (seen >= NEARBY_SHARE * table.total()).then_some(ids)
     }
 
-    /// The best of `cands` at syllable `i`. With `spelled`, a candidate counts as its best
-    /// spelling, so two that come to the same spelling are one.
-    fn best_fix(&self, i: usize, ended: bool, cands: Vec<Candidate>, spelled: bool) -> Option<Fix> {
+    /// The best of `cands` at syllable `i`, over keeping it as the best of `keep`. With `spelled`, a candidate
+    /// counts as its best spelling, so two that come to the same spelling are one.
+    fn best_fix(
+        &self,
+        i: usize,
+        ended: bool,
+        cands: Vec<Candidate>,
+        spelled: bool,
+        keep: &[u32],
+    ) -> Option<Fix> {
         let picks = self.best_path(ended);
         let seq: Vec<u32> = (0..self.opts.len())
             .map(|k| self.opts[k][picks[k]])
@@ -171,7 +201,9 @@ impl Typing<'_> {
         rated.sort_by(|a, b| a.0.cmp(&b.0).then(b.1.total_cmp(&a.1)));
         rated.dedup_by(|later, first| later.0 == first.0);
         let best = (0..rated.len()).reduce(|b, k| if rated[k].1 > rated[b].1 { k } else { b })?;
-        let keep = self.local(&seq, i, UNK, ended);
+        let keep = (keep.iter())
+            .map(|&id| self.local(&seq, i, id, ended))
+            .fold(f64::NEG_INFINITY, f64::max);
         let runner = (0..rated.len())
             .filter(|&k| k != best)
             .map(|k| rated[k].1)

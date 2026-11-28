@@ -103,7 +103,8 @@ namespace ngosen::test {
         bool isCursorMove() const override;
         // As fcitx::Key::toString names a letter or digit; it spells out punctuation, which tests do not reach.
         std::string name() const override {
-            return std::isalnum(static_cast<int>(appSym_)) != 0 && appSym_ < 0x80 ? std::string(1, static_cast<char>(appSym_)) : std::to_string(appSym_);
+            // isalnum is undefined for keysyms past 255 such as Escape, and crashes on armhf.
+            return appSym_ < 0x80 && std::isalnum(static_cast<int>(appSym_)) != 0 ? std::string(1, static_cast<char>(appSym_)) : std::to_string(appSym_);
         }
         void replaceSym(uint32_t sym) override {
             appSym_ = sym;

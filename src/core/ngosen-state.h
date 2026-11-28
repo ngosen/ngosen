@@ -122,6 +122,12 @@ namespace ngosen {
         bool teencodeOn() const {
             return teencodeOn_;
         }
+        // The user turned chat abbreviations on or off for the app (the c key in the mode menu).
+        void setShorthandOn(bool on) {
+            shorthandOn_ = on;
+        }
+        // Whether what is typed here may be a command, which no abbreviation changes.
+        bool mayBeCommandLine() const;
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
@@ -308,6 +314,7 @@ namespace ngosen {
         bool                           emojiMuted_       = false; ///< Esc hid the emoji for the rest of the sentence
         bool                           holdEmojiPreview_ = false; ///< an app reset keeps the preview until the field is checked
         bool                           teencodeOn_       = false; ///< true when the user turned teencode on for the app
+        bool                           shorthandOn_      = true;  ///< false when the user turned chat abbreviations off for the app
 
         bool                           engineSpellsPrecomposed_ = false; ///< the engine types Unicode while Sen mode will decompose the word
 
@@ -1064,7 +1071,6 @@ namespace ngosen {
         bool         keepsOnlyCommits() const;
         bool         mayShowWebTerminal() const;
         bool         marksEachField() const;
-        bool         mayBeCommandLine() const;
         void         checkFirstLetters();
         void         resetLetterCheckOnFieldChange();
         std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held

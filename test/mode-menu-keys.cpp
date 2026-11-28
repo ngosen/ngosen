@@ -52,6 +52,32 @@ namespace {
         return found;
     }
 
+    // What typing `text` into the field commits last.
+    std::string lastCommit(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, const std::string& text) {
+        for (const char c : text) {
+            const fcitx::Key key(c == ' ' ? FcitxKey_space : static_cast<fcitx::KeySym>(c));
+            fcitx::KeyEvent  down(&context, key, false);
+            engine.keyEvent(entry, down);
+            if (!down.accepted())
+                context.commitString(std::string(1, c));
+            fcitx::KeyEvent up(&context, key, true);
+            engine.keyEvent(entry, up);
+        }
+        return context.commits().empty() ? "" : context.commits().back();
+    }
+
+    // The apps a per-app switch saved, each followed by ";".
+    std::string savedApps(const std::string& file) {
+        std::ifstream in(std::filesystem::temp_directory_path() / "fcitx5-ngosen-mode-menu-keys/config/fcitx5/conf" / file);
+        std::string   line;
+        std::string   apps;
+        while (std::getline(in, line)) {
+            if (!line.empty() && line[0] != '#')
+                apps += line + ";";
+        }
+        return apps;
+    }
+
     std::string label(const fcitx::CommonCandidateList& list, int index) {
         return list.candidateFromAll(index).text().toString();
     }
@@ -90,14 +116,15 @@ int main() {
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 
-    // Sen, Preedit, the emoji switch, Off, then the teencode and Vim mode switches (missing from the saved order, so last,
-    // in the default order), and "type `".
+    // Sen, Preedit, the emoji switch, Off, then the teencode, chat abbreviation and Vim mode switches (missing from the
+    // saved order, so last, in the default order), and "type `".
     press(engine, entry, *context, FcitxKey_grave);
     auto list = menu(*context);
-    check(list && list->totalSize() == 7, "menu opens with seven items", list ? std::to_string(list->totalSize()) : "no menu");
+    check(list && list->totalSize() == 8, "menu opens with eight items", list ? std::to_string(list->totalSize()) : "no menu");
     check(list && label(*list, 2) == "   [w] Emoji suggestions: off", "the emoji switch starts off", list ? label(*list, 2) : "no menu");
     check(list && label(*list, 4) == "   [t] Teencode: off", "the teencode switch starts off", list ? label(*list, 4) : "no menu");
-    check(list && label(*list, 5) == "   [v] Vim mode: off", "the Vim mode switch starts off", list ? label(*list, 5) : "no menu");
+    check(list && label(*list, 5) == "   [c] Chat abbreviations: on", "the chat abbreviation switch starts on", list ? label(*list, 5) : "no menu");
+    check(list && label(*list, 6) == "   [v] Vim mode: off", "the Vim mode switch starts off", list ? label(*list, 6) : "no menu");
     // gedit has no rule of its own, so it follows the global Preedit.
     check(list && list->globalCursorIndex() == 1, "the app's mode is highlighted", list ? std::to_string(list->globalCursorIndex()) : "no menu");
     press(engine, entry, *context, FcitxKey_Down);
@@ -149,7 +176,7 @@ int main() {
     check(context->commits().size() == 1, "v types nothing", std::to_string(context->commits().size()) + " commits");
     press(engine, entry, *context, FcitxKey_grave);
     list = menu(*context);
-    check(list && label(*list, 5) == "   [v] Vim mode: on", "the menu shows Vim mode on", list ? label(*list, 5) : "no menu");
+    check(list && label(*list, 6) == "   [v] Vim mode: on", "the menu shows Vim mode on", list ? label(*list, 6) : "no menu");
     press(engine, entry, *context, FcitxKey_v);
     check(vimApps().empty(), "v again turns Vim mode off", vimApps());
 
@@ -181,23 +208,14 @@ int main() {
         engine.setConfig(off);
         press(engine, entry, *context, FcitxKey_grave);
         list = menu(*context);
-        check(list && list->totalSize() == 6, "with emoji off everywhere the switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
+        check(list && list->totalSize() == 7, "with emoji off everywhere the switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
         press(engine, entry, *context, FcitxKey_Escape);
         off.setValueByPath("EmojiSuggestions", "True");
         engine.setConfig(off);
     }
 
     // t turns teencode on for the app and keeps the typing mode.
-    const auto teencodeApps = [] {
-        std::ifstream file(std::filesystem::temp_directory_path() / "fcitx5-ngosen-mode-menu-keys/config/fcitx5/conf/ngosen-teencode-apps.conf");
-        std::string   line;
-        std::string   apps;
-        while (std::getline(file, line)) {
-            if (!line.empty() && line[0] != '#')
-                apps += line + ";";
-        }
-        return apps;
-    };
+    const auto teencodeApps = [] { return savedApps("ngosen-teencode-apps.conf"); };
     press(engine, entry, *context, FcitxKey_grave);
     press(engine, entry, *context, FcitxKey_t);
     check(!menu(*context), "t closes the menu", "menu still open");
@@ -215,10 +233,63 @@ int main() {
         engine.setConfig(off);
         press(engine, entry, *context, FcitxKey_grave);
         list = menu(*context);
-        check(list && list->totalSize() == 6, "without auto restore the teencode switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
+        check(list && list->totalSize() == 7, "without auto restore the teencode switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
         press(engine, entry, *context, FcitxKey_Escape);
         off.setValueByPath("AutoNonVnRestore", "True");
         engine.setConfig(off);
+    }
+
+    // c turns chat abbreviations off for the app, where ko then stays as typed.
+    {
+        const auto offApps = [] { return savedApps("ngosen-chat-shorthand-off-apps.conf"); };
+        auto       kate    = std::make_unique<TestInputContext>(&testInstance.instance, "kate");
+        kate->setCapabilityFlags({fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::SurroundingText});
+        context->focusOut();
+        kate->focusIn();
+        fcitx::InputContextEvent kateFocus(kate.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, kateFocus);
+        check(lastCommit(engine, entry, *kate, "ko ") == "không ", "ko expands in an app left alone", lastCommit(engine, entry, *kate, ""));
+        press(engine, entry, *kate, FcitxKey_grave);
+        press(engine, entry, *kate, FcitxKey_c);
+        check(!menu(*kate), "c closes the menu", "menu still open");
+        check(realMode.load() == ngosen::Mode::Preedit, "c keeps the typing mode", modeName(realMode.load()));
+        check(offApps() == "kate;", "c saves chat abbreviations off for kate", offApps());
+        check(lastCommit(engine, entry, *kate, "ko ") == "ko ", "ko stays as typed where c turned it off", lastCommit(engine, entry, *kate, ""));
+        press(engine, entry, *kate, FcitxKey_grave);
+        list = menu(*kate);
+        check(list && label(*list, 5) == "   [c] Chat abbreviations: off", "the menu shows chat abbreviations off", list ? label(*list, 5) : "no menu");
+        press(engine, entry, *kate, FcitxKey_Escape);
+        engine.reloadConfig();
+        check(lastCommit(engine, entry, *kate, "ko ") == "ko ", "a reload keeps the app's choice", lastCommit(engine, entry, *kate, ""));
+        press(engine, entry, *kate, FcitxKey_grave);
+        press(engine, entry, *kate, FcitxKey_c);
+        check(offApps().empty(), "c again turns chat abbreviations on", offApps());
+        check(lastCommit(engine, entry, *kate, "ko ") == "không ", "ko expands again", lastCommit(engine, entry, *kate, ""));
+
+        fcitx::RawConfig off;
+        off.setValueByPath("ChatShorthand", "False");
+        engine.setConfig(off);
+        press(engine, entry, *kate, FcitxKey_grave);
+        list = menu(*kate);
+        check(list && list->totalSize() == 7, "with chat abbreviations off everywhere the switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
+        press(engine, entry, *kate, FcitxKey_Escape);
+        off.setValueByPath("ChatShorthand", "True");
+        engine.setConfig(off);
+        kate->focusOut();
+
+        // Nothing expands in a terminal, so its menu has no switch to offer.
+        auto terminal = std::make_unique<TestInputContext>(&testInstance.instance, "konsole");
+        terminal->setCapabilityFlags({fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::SurroundingText});
+        terminal->focusIn();
+        fcitx::InputContextEvent terminalFocus(terminal.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, terminalFocus);
+        press(engine, entry, *terminal, FcitxKey_grave);
+        list = menu(*terminal);
+        check(list && list->totalSize() == 7, "a terminal's menu has no chat abbreviation switch", list ? std::to_string(list->totalSize()) : "no menu");
+        press(engine, entry, *terminal, FcitxKey_Escape);
+        terminal->focusOut();
+        context->focusIn();
+        engine.activate(entry, focus);
     }
 
     // A window without a name keeps its emoji switch through a settings reload, and loses it when it closes.

@@ -320,6 +320,7 @@ namespace fcitx {
         std::string                                 webTerminalAppsPath_;
         std::string                                 emojiAppsPath_;
         std::string                                 teencodeAppsPath_;
+        std::string                                 shorthandOffAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
         uint64_t                                    modeMenuQuietSince_ = 0;
         // A modifier-only toggle key fires on release, unless another key came in between.
@@ -362,6 +363,8 @@ namespace fcitx {
         KeySym                                 emojiMenuKey_ = FcitxKey_None;
         std::unordered_set<std::string>        teencodeApps_; ///< Apps where the user turned teencode on
         KeySym                                 teencodeMenuKey_ = FcitxKey_None;
+        std::unordered_set<std::string>        shorthandOffApps_; ///< Apps where the user turned chat abbreviations off
+        KeySym                                 shorthandMenuKey_ = FcitxKey_None;
         // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
@@ -481,6 +484,10 @@ namespace fcitx {
         void                       loadTeencodeApps();
         void                       saveTeencodeApps() const;
         void                       toggleTeencode(InputContext* ic);
+        bool                       chatShorthandOnFor(const std::string& appName) const;
+        void                       loadShorthandOffApps();
+        void                       saveShorthandOffApps() const;
+        void                       toggleChatShorthand(InputContext* ic);
         std::optional<NgoSenMode>  findAppRule(const std::string& appName) const;
         // The mode Vietnamese typing uses: the configured one, unless that is Off.
         NgoSenMode vietnameseMode() const;
@@ -528,9 +535,10 @@ namespace fcitx {
             std::string label;
             KeySym      key;
             bool        visible;
-            bool        vim      = false; // the Vim mode switch rather than a typing mode
-            bool        emoji    = false; // the emoji suggestions switch
-            bool        teencode = false; // the teencode switch
+            bool        vim       = false; // the Vim mode switch rather than a typing mode
+            bool        emoji     = false; // the emoji suggestions switch
+            bool        teencode  = false; // the teencode switch
+            bool        shorthand = false; // the chat abbreviations switch
         };
         // Every mode in the configured order, then the ones the order leaves out.
         std::vector<ModeMenuItem> modeMenuItems();

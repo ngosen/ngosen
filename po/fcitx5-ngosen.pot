@@ -2560,3 +2560,19 @@ msgstr ""
 #: src/ngosen-engine.cpp
 msgid "Ngó Sen expanded a chat abbreviation. Press Backspace right after the space to get back what you typed. See the list or turn this off on the Macros page."
 msgstr ""
+
+#: src/ngosen-config.h
+msgid "Show chat abbreviations"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Shortcut for chat abbreviations"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Chat abbreviations: on"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Chat abbreviations: off"
+msgstr ""

@@ -3019,3 +3019,19 @@ msgstr "Chữ viết tắt khi chat mà bạn trả lại bằng Backspace hai l
 #: src/ngosen-engine.cpp
 msgid "Ngó Sen expanded a chat abbreviation. Press Backspace right after the space to get back what you typed. See the list or turn this off on the Macros page."
 msgstr "Ngó Sen vừa bung một chữ viết tắt khi chat. Bấm Backspace ngay sau dấu cách để lấy lại chữ đã gõ. Xem danh sách hoặc tắt ở trang Gõ tắt."
+
+#: src/ngosen-config.h
+msgid "Show chat abbreviations"
+msgstr "Hiển thị chữ viết tắt khi chat"
+
+#: src/ngosen-config.h
+msgid "Shortcut for chat abbreviations"
+msgstr "Phím tắt cho chữ viết tắt khi chat"
+
+#: src/ngosen-engine.cpp
+msgid "Chat abbreviations: on"
+msgstr "Chữ viết tắt khi chat: bật"
+
+#: src/ngosen-engine.cpp
+msgid "Chat abbreviations: off"
+msgstr "Chữ viết tắt khi chat: tắt"

@@ -113,8 +113,8 @@ namespace ngosen {
         const Field field = host_->field();
         // Backspace gives the typed key back by deleting the expansion, which a preedit needs the field's text for.
         const bool givesBack = mode() != ngosen::Mode::Preedit || field.surroundingText;
-        const bool here =
-            engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() && !mayBeCommandLine() && givesBack;
+        const bool here      = engine_->options().chatShorthand && shorthandOn_ && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() &&
+            !mayBeCommandLine() && givesBack;
         const uintptr_t wanted = here ? engine_->chatShorthand() : 0;
         if (wanted == shorthand_)
             return;

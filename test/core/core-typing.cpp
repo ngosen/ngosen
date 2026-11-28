@@ -306,6 +306,7 @@ namespace {
         bool                                             guess          = true;
         bool                                             inTerminals    = false;
         bool                                             shorthand      = false;
+        bool                                             shorthandHere  = true; // the user's choice for the app
         bool                                             macrosWhileOff = false;
         std::vector<std::pair<std::string, std::string>> macros;
         std::string                                      keptIn; // the file that counts the chat abbreviations taken back
@@ -340,6 +341,7 @@ namespace {
         ngosen::test::FakeApp* app   = owned.get();
         ngosen::TypingState    state(&resources, std::move(owned));
         app->attach(&state);
+        state.setShorthandOn(run.shorthandHere);
         for (size_t i = 0; i < typed.size(); ++i) {
             if (typed[i] == '~')
                 continue;
@@ -1329,6 +1331,8 @@ namespace {
             check(text == "không được. Hôm nay ", "chat shorthand: expands at a word end" + name, text);
             text = typeGuessingInApp(reports, mode, "ko dc ");
             check(text == "ko dc ", "chat shorthand: off unless asked for" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko dc ", {.shorthand = true, .shorthandHere = false});
+            check(text == "ko dc ", "chat shorthand: off in an app the user turned it off for" + name, text);
             text = typeGuessingInApp(makeField("wayland", true, "firefox"), mode, "ko ", {.shorthand = true});
             check(text == "không ", "chat shorthand: on in a browser, though a page may show a terminal" + name, text);
             text = typeGuessingInApp(reports, mode, "ko ", {.shorthand = true, .macros = {{"ko", "kansas"}}});

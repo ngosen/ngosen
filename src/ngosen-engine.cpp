@@ -188,7 +188,7 @@ namespace fcitx {
     // to FcitxKey_f.
     static bool isAppModeMenuReservedKey(KeySym sym, const ngosenConfig& config) {
         if (sym == Key(*config.shortcutSen).sym() || sym == Key(*config.shortcutPreedit).sym() || sym == Key(*config.shortcutEmoji).sym() ||
-            sym == Key(*config.shortcutTeencode).sym() || sym == Key(*config.shortcutOff).sym()) {
+            sym == Key(*config.shortcutTeencode).sym() || sym == Key(*config.shortcutChatShorthand).sym() || sym == Key(*config.shortcutOff).sym()) {
             return true;
         }
 
@@ -371,6 +371,7 @@ namespace fcitx {
                 std::lock_guard<std::mutex> lock(appRulesMutex_);
                 emojiApps_.erase(appName);
                 teencodeApps_.erase(appName);
+                shorthandOffApps_.erase(appName);
                 vimApps_.erase(appName);
             }
         });
@@ -490,6 +491,8 @@ namespace fcitx {
         loadEmojiApps();
         teencodeAppsPath_ = configDir + "/ngosen-teencode-apps.conf";
         loadTeencodeApps();
+        shorthandOffAppsPath_ = configDir + "/ngosen-chat-shorthand-off-apps.conf";
+        loadShorthandOffApps();
         enlargePanelFont();
         menuEntries_ = {{vietnameseAction_.get(), nullptr},
                         {inputMethodAction_.get(), &config_.showMenuInputMethod},
@@ -670,6 +673,7 @@ namespace fcitx {
         loadWebTerminalApps();
         loadEmojiApps();
         loadTeencodeApps();
+        loadShorthandOffApps();
         enlargePanelFont();
         populateConfig();
     }
@@ -1072,6 +1076,7 @@ namespace fcitx {
         stateFor(ic)->setVimKeys(vimModeFor(appName));
         stateFor(ic)->setEmojiOn(emojiOnFor(appName));
         stateFor(ic)->setTeencodeOn(teencodeOnFor(appName));
+        stateFor(ic)->setShorthandOn(chatShorthandOnFor(appName));
         showMode(ic, targetMode, event.type() == EventType::InputContextFocusIn);
         stateFor(ic)->offerRetype();
     }
@@ -1190,6 +1195,8 @@ namespace fcitx {
             toggleEmoji(ic);
         } else if (teencodeMenuKey_ != FcitxKey_None && keySym == teencodeMenuKey_) {
             toggleTeencode(ic);
+        } else if (shorthandMenuKey_ != FcitxKey_None && keySym == shorthandMenuKey_) {
+            toggleChatShorthand(ic);
         } else if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
             NGOSEN_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
             pickMenuMode(ic, it->second);
@@ -1391,6 +1398,7 @@ namespace fcitx {
             state->setEngine();
             state->setEmojiOn(emojiOnFor(getProgramName(ic)));
             state->setTeencodeOn(teencodeOnFor(getProgramName(ic)));
+            state->setShorthandOn(chatShorthandOnFor(getProgramName(ic)));
             if (ic->hasFocus()) {
                 // Re-resolve the focused window's rule; setEngine() must not
                 // reset it to the global mode.
@@ -2009,6 +2017,32 @@ namespace fcitx {
         stateFor(ic)->setTeencodeOn(on);
     }
 
+    bool NgoSenEngine::chatShorthandOnFor(const std::string& appName) const {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        return !listsApp(shorthandOffApps_, appName);
+    }
+
+    void NgoSenEngine::loadShorthandOffApps() {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        readAppList(shorthandOffAppsPath_, shorthandOffApps_);
+    }
+
+    void NgoSenEngine::saveShorthandOffApps() const {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        writeAppList(shorthandOffAppsPath_, "# Apps where Ngó Sen leaves chat abbreviations as typed, one per line", shorthandOffApps_);
+    }
+
+    void NgoSenEngine::toggleChatShorthand(InputContext* ic) {
+        bool off = false;
+        {
+            std::lock_guard<std::mutex> lock(appRulesMutex_);
+            off = flipApp(shorthandOffApps_, currentConfigureApp_);
+        }
+        saveShorthandOffApps();
+        closeModeMenuPanel(ic, true);
+        stateFor(ic)->setShorthandOn(!off);
+    }
+
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
@@ -2018,6 +2052,9 @@ namespace fcitx {
             {"Emoji", {NgoSenMode::Sen, _("Emoji suggestions"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji && *config_.emojiSuggestions, false, true}},
             // Teencode only changes which words restore to their keys.
             {"Teencode", {NgoSenMode::Sen, _("Teencode"), getShortcut(*config_.shortcutTeencode), *config_.showModeTeencode && *config_.autoNonVnRestore, false, false, true}},
+            {"ChatShorthand",
+             {NgoSenMode::Sen, _("Chat abbreviations"), getShortcut(*config_.shortcutChatShorthand), *config_.showModeChatShorthand && *config_.chatShorthand && chatShorthand_,
+              false, false, false, true}},
             {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
             {"Vim", {NgoSenMode::Sen, _("Vim mode"), getShortcut(*config_.shortcutVim), *config_.showModeVim, true}}};
 
@@ -2056,9 +2093,10 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
-        vimMenuKey_      = FcitxKey_None;
-        emojiMenuKey_    = FcitxKey_None;
-        teencodeMenuKey_ = FcitxKey_None;
+        vimMenuKey_       = FcitxKey_None;
+        emojiMenuKey_     = FcitxKey_None;
+        teencodeMenuKey_  = FcitxKey_None;
+        shorthandMenuKey_ = FcitxKey_None;
 
         // A switch for the app keeps the typing mode; its key flips it.
         auto appendSwitch = [&](const ModeMenuItem& info, KeySym& menuKey, const std::string& label, void (NgoSenEngine::*toggle)(InputContext*)) {
@@ -2084,6 +2122,13 @@ namespace fcitx {
             }
             if (info.teencode) {
                 appendSwitch(info, teencodeMenuKey_, teencodeOnFor(currentConfigureApp_) ? _("Teencode: on") : _("Teencode: off"), &NgoSenEngine::toggleTeencode);
+                continue;
+            }
+            if (info.shorthand) {
+                // Nothing expands on a command line, so there is nothing to switch.
+                if (!stateFor(ic)->mayBeCommandLine())
+                    appendSwitch(info, shorthandMenuKey_, chatShorthandOnFor(currentConfigureApp_) ? _("Chat abbreviations: on") : _("Chat abbreviations: off"),
+                                 &NgoSenEngine::toggleChatShorthand);
                 continue;
             }
             if (hasShortcut && usedModeKeys.insert(info.key).second) {
@@ -2336,6 +2381,7 @@ namespace fcitx {
             if (ic == activeContext_) {
                 stateFor(ic)->setEmojiOn(emojiOnFor(appName));
                 stateFor(ic)->setTeencodeOn(teencodeOnFor(appName));
+                stateFor(ic)->setShorthandOn(chatShorthandOnFor(appName));
             }
             const NgoSenMode mode = modeFor(appName);
             if (ic == activeContext_ && mode != realMode) {

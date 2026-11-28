@@ -65,7 +65,8 @@ Qt version on KDE Plasma:
   `tunx`, press and release Ctrl, then press Space to keep `tũn`.
 - Đoán dấu (adding marks): typing `toi di hoc` without marks gives `tôi đi học`. Off by default; turn it
   on on the "Đoán chữ" (Word guessing) settings page, which can also fix syllables typed wrong, at three
-  levels of boldness. In terminals and old X11 apps using XIM it stays off unless "Đoán cả
+  levels of boldness, and, as an experiment, marks typed wrong (`tôi gỗ phím` to `tôi gõ phím`) when the
+  words around show it. In terminals and old X11 apps using XIM it stays off unless "Đoán cả
   trong terminal" (Guess in terminals too) is on: there it cannot correct earlier words, so it guesses
   wrong more often. It learns from what you type; see [What word guessing learns](#what-word-guessing-learns).
 - Macros: with "Gõ tắt chữ hoa" enabled, a `ko` → `không` macro expands `Ko` to `Không`.

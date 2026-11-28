@@ -462,6 +462,9 @@ namespace {
             // ggo falls short of the margin after gõ; phim after it settles it.
             text = typeGuessingInApp(reports, mode, "go ggo phim ", {.fixesTypos = true});
             check(text == "gõ gõ phím ", "Đoán dấu: a word short of the margin is fixed once the next word ends" + name, text);
+            // With the preedit the field is still empty when its first word ends.
+            text = typeGuessingInApp(reports, mode, "ggo phim ", {.fixesTypos = true});
+            check(text == "gõ phím ", "Đoán dấu: the first word of a field is fixed once the next word ends" + name, text);
             text = typeGuessingInApp(makeField("wayland", false), mode, "go ggo phim ", {.fixesTypos = true});
             check(text == "gõ ggo phím ", "Đoán dấu: a field that shows nothing keeps the word before the last as typed" + name, text);
             text = typeGuessingInApp(reports, mode, "go ggo phim \b", {.fixesTypos = true});

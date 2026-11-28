@@ -2512,6 +2512,17 @@ fn backspace_right_after_a_later_fix_takes_it_back_for_good() {
 }
 
 #[test]
+fn the_first_word_of_a_field_still_empty_when_it_ends_gets_the_later_fix() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    e.set_whole_run(false);
+    type_into(&mut e, &mut field, &[("banfm", ' ')]);
+    e.set_whole_run(true);
+    type_into(&mut e, &mut field, &[("phim", ' ')]);
+    assert_eq!(field, ["bàn", "phím"]);
+}
+
+#[test]
 fn taking_a_later_fix_back_changes_that_word_alone() {
     let mut e = engine_on(&shared_dictionary());
     let mut field = Vec::new();

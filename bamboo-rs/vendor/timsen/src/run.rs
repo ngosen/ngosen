@@ -126,7 +126,9 @@ impl<'t> Run<'t> {
 
     /// Whether a syllable [`Run::push_nearby`] left as typed is decided once more when the word
     /// after it ends, with that word as context too. Such a fix changes the word before the last,
-    /// so it is for a field whose earlier words can change ([`Reach::Run`]). Off by default.
+    /// so it is for a field whose earlier words can change ([`Reach::Run`]). Off by default. What
+    /// counts is the setting when the word after ends, so an input method may turn it on for a
+    /// field that only then shows its text.
     pub fn fixing_again(mut self, again: bool) -> Run<'t> {
         self.fix_again = again;
         self
@@ -152,7 +154,7 @@ impl<'t> Run<'t> {
             typing.fix_nearby(last, false, nearby)
         });
         let at = self.shown.len() - 1;
-        if self.fix_again && self.fixed[at].is_none() && !nearby.is_empty() {
+        if self.fixed[at].is_none() && !nearby.is_empty() {
             let nearby = (nearby.iter())
                 .map(|near| (near.word.to_string(), near.cost))
                 .collect();
@@ -165,6 +167,9 @@ impl<'t> Run<'t> {
         let Some(Waiting { at, nearby }) = self.waiting.take() else {
             return;
         };
+        if !self.fix_again {
+            return;
+        }
         let Some(Pushed::Guessed(typed)) = self.pushed.get(at) else {
             return;
         };
@@ -952,6 +957,19 @@ mod tests {
             }
             assert_eq!(run.shown(), strings(&[shown, "ta"]));
             assert_eq!(run.last_fix(), again.then_some(0));
+        }
+    }
+
+    #[test]
+    fn the_setting_counts_when_the_next_word_ends() {
+        let t = table();
+        for (at_its_end, at_the_next) in [(false, true), (true, false)] {
+            let run = Run::new(Typing::new(&t), 0.99).fixing(Some(FIX_MARGIN));
+            let mut run = run.fixing_again(at_its_end);
+            type_nearby(&mut run, "ngwoif", &SHORT_OF_THE_MARGIN);
+            let mut run = run.fixing_again(at_the_next);
+            run.push("ta");
+            assert_eq!(run.last_fix(), at_the_next.then_some(0));
         }
     }
 

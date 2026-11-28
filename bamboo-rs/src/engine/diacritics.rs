@@ -20,6 +20,12 @@ const RAW_CONFIDENCE: f64 = 0.99;
 /// as meant.
 const MEANT_AFTER: u8 = 3;
 
+/// Whether keys hold a mark key after a vowel, as those of a word the engine took back do.
+fn carries_mark_key(keys: &str) -> bool {
+    let vowel = keys.find(|c: char| "aeiouyAEIOUY".contains(c));
+    vowel.is_some_and(|i| keys[i..].contains(|c: char| "sfrxjwSFRXJW".contains(c)))
+}
+
 /// Whether a word could be meant as typed: plain letters, neither one alone nor a long string.
 fn could_be_meant(word: &str) -> bool {
     (2..=10).contains(&word.len()) && word.bytes().all(|b| b.is_ascii_alphabetic())
@@ -42,6 +48,10 @@ pub type Replacement = (String, String);
 /// Gives, for the keys of a word, the words that keys one slip away would have typed, each with
 /// the cost of that slip in timsen's units.
 pub type WordsNear<'a> = &'a dyn Fn(&str) -> Vec<(String, f64)>;
+
+/// Gives, for the keys of a word and the word they typed, the words near them that differ from it
+/// only in marks, each with the cost of that slip.
+pub type MarksNear<'a> = &'a dyn Fn(&str, &str) -> Vec<(String, f64)>;
 
 /// Whether the fields learn, shared by all of them. `epoch` moves on every change and every
 /// forget, so a run that was open across one learns nothing, even when learning is back on by its
@@ -387,8 +397,15 @@ impl Diacritics {
     /// What the engine committed at a word end, and its keys; `typed` is false for a macro's text.
     /// Anything but letters and spaces ends the run where it stands, so a macro of two sentences
     /// makes two runs. `near` is asked about a typed word nothing knows.
-    pub fn committed(&mut self, text: &str, keys: &str, typed: bool, near: WordsNear) {
-        self.take_in(text, keys, typed.then_some(near), false);
+    pub fn committed(
+        &mut self,
+        text: &str,
+        keys: &str,
+        typed: bool,
+        near: WordsNear,
+        marks: Option<MarksNear>,
+    ) {
+        self.take_in(text, keys, typed.then_some((near, marks)), false);
     }
 
     /// A chat abbreviation's text: its words are context for the others, never guessed and never
@@ -397,7 +414,13 @@ impl Diacritics {
         self.take_in(text, "", None, true);
     }
 
-    fn take_in(&mut self, text: &str, keys: &str, near: Option<WordsNear>, written: bool) {
+    fn take_in(
+        &mut self,
+        text: &str,
+        keys: &str,
+        near: Option<(WordsNear, Option<MarksNear>)>,
+        written: bool,
+    ) {
         // The keys end with the one that ended the word, and read one word only.
         let keys = keys.trim_end_matches(|c: char| !c.is_alphanumeric());
         let keys = (words_of(text).len() == 1).then_some(keys);
@@ -490,7 +513,14 @@ impl Diacritics {
         }
     }
 
-    fn push(&mut self, word: &str, keys: Option<&str>, as_typed: bool, near: Option<WordsNear>) {
+    fn push(
+        &mut self,
+        word: &str,
+        keys: Option<&str>,
+        as_typed: bool,
+        near: Option<(WordsNear, Option<MarksNear>)>,
+    ) {
+        let (near, marks) = near.unzip();
         if self.over {
             self.forget_run();
         }
@@ -528,11 +558,28 @@ impl Diacritics {
         if typed_plain && self.counts_plain && run.may_fix(word) {
             self.plain.push(run.len());
         }
+        // A word with marks, or keys with a mark key the engine took back, may have lost a mark
+        // key; one typed with none is Đoán dấu's to mark. Only a later word can change it, so the
+        // search is skipped where none may.
+        let marks_near = (marks.flatten())
+            .filter(|_| {
+                !as_typed && !slipped && self.reach == Reach::Run && self.fix_margin.is_some()
+            })
+            .zip(letters.filter(|k| !k.is_empty()))
+            .filter(|(_, keys)| without_diacritics(word) != word || carries_mark_key(keys))
+            .map(|(marks, keys)| marks(keys, word));
         let (before, fixed) = (run.len().checked_sub(1), run.last_fix());
         match (raw, letters.filter(|k| !k.is_empty()).zip(near)) {
             _ if as_typed => {
                 self.undone.push(run.len());
                 run.push_as_typed(word);
+            }
+            _ if marks_near.is_some() => {
+                let words = marks_near.unwrap_or_default();
+                let nearby: Vec<Nearby> = (words.iter())
+                    .map(|(word, cost)| Nearby { word, cost: *cost })
+                    .collect();
+                run.push_marks(word, raw, &nearby);
             }
             (_, Some((keys, near))) if slipped => {
                 let words = near(keys);

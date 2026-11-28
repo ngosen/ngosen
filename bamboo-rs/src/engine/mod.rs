@@ -398,6 +398,8 @@ pub struct BambooEngine {
     last_commit_abbreviation: bool,
     /// A field that has been a password or sensitive field, which never reaches Đoán dấu again.
     pub(crate) private_field: bool,
+    /// Whether Đoán dấu also fixes a word it knows that differs from the one meant only in marks.
+    pub(crate) fix_marks: bool,
 }
 
 impl BambooEngine {
@@ -442,6 +444,7 @@ impl BambooEngine {
             last_commit_macro: false,
             last_commit_abbreviation: false,
             private_field: false,
+            fix_marks: false,
         }
     }
 
@@ -1150,7 +1153,15 @@ impl BambooEngine {
             if written || self.shorthand.keeps(word) {
                 d.committed_as_written(&s);
             } else {
-                d.committed(&s, &self.raw_text(), typed, &|keys| self.words_near(keys));
+                let marks = |keys: &str, shown: &str| self.marks_near(keys, shown);
+                let marks = self.fix_marks.then_some(&marks as diacritics::MarksNear);
+                d.committed(
+                    &s,
+                    &self.raw_text(),
+                    typed,
+                    &|keys| self.words_near(keys),
+                    marks,
+                );
             }
             self.diacritics = Some(d);
         }
@@ -1543,6 +1554,13 @@ impl BambooEngine {
             d.reset();
         }
         self.diacritics = None;
+    }
+
+    /// Whether Đoán dấu also fixes a word it knows to one that differs from it only in marks
+    /// (`nhưng` to `những` after a mark key left out), once the word after it shows which is meant.
+    /// It needs fixing on and a field whose earlier words can change. Off until asked for.
+    pub fn set_fix_marks(&mut self, on: bool) {
+        self.fix_marks = on;
     }
 
     /// The margin Đoán dấu fixes syllables nothing knows (`phmi` to `phím`) by in runs started

@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Trang cài file `.deb` trong App Center của Ubuntu hiện tên "NgoSen" thay vì "Ng? Sen": App Center không đọc được chữ có dấu trong mô tả gói (#1057).
+
 ## [1.14.4-1] — 27/11/2026
 
 Trên KDE Plasma (Wayland), WPS Office gõ được tiếng Việt mà không cần tự đặt `QT_IM_MODULE=fcitx`, kể cả khi cài Ngó Sen từ kho gói hay AUR hoặc cài WPS sau (#1032).
